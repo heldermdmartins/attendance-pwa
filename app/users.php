@@ -1,6 +1,19 @@
 <?php
 declare(strict_types=1);
 
+function beginAccountChange(PDO $pdo, int $coach): void
+{
+    $pdo->beginTransaction();
+    // Serialize account changes and recheck access after acquiring the lock.
+    $admins = $pdo->query("SELECT id FROM coaches WHERE role='admin' AND active=1 ORDER BY id FOR UPDATE")
+        ->fetchAll(PDO::FETCH_COLUMN);
+    if (!in_array($coach, array_map('intval', $admins), true)) {
+        $pdo->rollBack();
+        http_response_code(403);
+        exit('Área reservada a administradores.');
+    }
+}
+
 $roles = ['user' => 'Utilizador', 'admin' => 'Administrador'];
 $positions = ['coach' => 'Treinador', 'delegate' => 'Delegado'];
 $fields = ['username', 'name', 'email', 'phone', 'role', 'club_position'];
@@ -27,11 +40,50 @@ if ($editing) {
 $self = $editing === $coach;
 $active = $account === null || (bool) $account['active'];
 $error = '';
+$adding = ($_GET['view'] ?? '') === 'new' && !$editing;
+$confirming = ($_GET['view'] ?? '') === 'delete' && $editing && !$self;
+
 if ($method === 'POST') {
     if (!is_string($_POST['csrf'] ?? null) || !hash_equals($csrf, $_POST['csrf'])) {
         http_response_code(403);
         exit('Atualize a página e tente novamente.');
     }
+
+    $operation = $_POST['operation'] ?? 'save';
+    if (in_array($operation, ['activate', 'deactivate', 'delete'], true)) {
+        if (!$editing || $self || ($operation === 'delete' && !$confirming)) {
+            http_response_code(403);
+            exit('Ação indisponível para esta conta.');
+        }
+        try {
+            beginAccountChange($pdo, $coach);
+            $query = $pdo->prepare($operation === 'delete'
+                ? 'DELETE FROM coaches WHERE id = ?'
+                : 'UPDATE coaches SET active = ? WHERE id = ?');
+            $query->execute($operation === 'delete' ? [$editing] : [(int) ($operation === 'activate'), $editing]);
+            $pdo->commit();
+            $_SESSION['users_saved'] = match ($operation) {
+                'activate' => 'Conta ativada.',
+                'deactivate' => 'Conta desativada.',
+                'delete' => 'Conta apagada.',
+            };
+        } catch (PDOException $exception) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            if ($operation !== 'delete' || ($exception->errorInfo[1] ?? null) !== 1451) {
+                throw $exception;
+            }
+            $_SESSION['users_error'] = 'Esta conta tem presenças associadas. Podes desativá-la para preservar o histórico.';
+        }
+        header('Location: ?action=users', true, 303);
+        exit;
+    }
+    if ($operation !== 'save' || $confirming) {
+        http_response_code(400);
+        exit('Ação inválida.');
+    }
+    $adding = !$editing;
 
     foreach ($fields as $field) {
         $values[$field] = is_string($_POST[$field] ?? null) ? trim($_POST[$field]) : '';
@@ -58,15 +110,7 @@ if ($method === 'POST') {
         $error = 'A palavra-passe deve ter entre 12 e 72 bytes.';
     } else {
         try {
-            $pdo->beginTransaction();
-            // Serialize account changes and recheck access after acquiring the lock.
-            $admins = $pdo->query("SELECT id FROM coaches WHERE role='admin' AND active=1 ORDER BY id FOR UPDATE")
-                ->fetchAll(PDO::FETCH_COLUMN);
-            if (!in_array($coach, array_map('intval', $admins), true)) {
-                $pdo->rollBack();
-                http_response_code(403);
-                exit('Área reservada a administradores.');
-            }
+            beginAccountChange($pdo, $coach);
             $valuesToSave = array_map(static fn ($field) => $values[$field], $fields);
             $valuesToSave[] = (int) $active;
             $hash = $password !== '' ? password_hash($password, PASSWORD_BCRYPT) : null;
@@ -84,7 +128,7 @@ if ($method === 'POST') {
                 $query->execute([...$valuesToSave, $hash]);
             }
             $pdo->commit();
-            $_SESSION['users_saved'] = true;
+            $_SESSION['users_saved'] = 'Conta guardada.';
             header('Location: ?action=users', true, 303);
             exit;
         } catch (PDOException $exception) {
@@ -104,8 +148,10 @@ if ($method === 'POST') {
     exit;
 }
 
-$saved = !empty($_SESSION['users_saved']);
-unset($_SESSION['users_saved']);
+$saved = $_SESSION['users_saved'] ?? '';
+$saved = $saved === true ? 'Conta guardada.' : $saved;
+$actionError = $_SESSION['users_error'] ?? '';
+unset($_SESSION['users_saved'], $_SESSION['users_error']);
 session_write_close();
 $accounts = $pdo->query('SELECT id, username, name, email, phone, role, club_position, active FROM coaches ORDER BY name, username')
     ->fetchAll(PDO::FETCH_ASSOC);
@@ -116,7 +162,7 @@ $accounts = $pdo->query('SELECT id, username, name, email, phone, role, club_pos
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Gestão de utilizadores</title>
-    <link rel="stylesheet" href="assets/styles.css">
+    <link rel="stylesheet" href="assets/styles.css?v=6">
 </head>
 <body>
 <main>
@@ -124,19 +170,68 @@ $accounts = $pdo->query('SELECT id, username, name, email, phone, role, club_pos
         <h1>Gestão de utilizadores</h1>
         <a href="./">Presenças</a>
     </header>
-    <?php if ($saved): ?><p role="status">Conta guardada.</p><?php endif; ?>
-    <ul class="users-list">
-        <?php foreach ($accounts as $person): ?>
-        <li>
-            <strong><?= escape($person['name'] ?: $person['username']) ?></strong>
-            <span><?= escape($person['username']) ?> · <?= $roles[$person['role']] ?> · <?= $positions[$person['club_position']] ?> · <?= $person['active'] ? 'Ativa' : 'Inativa' ?></span>
-            <?php if ($person['email'] !== ''): ?><span><?= escape($person['email']) ?></span><?php endif; ?>
-            <?php if ($person['phone'] !== ''): ?><span><?= escape($person['phone']) ?></span><?php endif; ?>
-            <a href="?action=users&amp;id=<?= (int) $person['id'] ?>#user-form">Editar <span class="visually-hidden"><?= escape($person['username']) ?></span></a>
-        </li>
-        <?php endforeach; ?>
-    </ul>
+    <?php if ($saved !== ''): ?><p role="status"><?= escape($saved) ?></p><?php endif; ?>
+    <?php if ($actionError !== ''): ?><p class="error" role="alert"><?= escape($actionError) ?></p><?php endif; ?>
 
+    <?php if ($confirming): ?>
+    <section>
+        <h2>Apagar utilizador</h2>
+        <p>Queres apagar definitivamente a conta de <strong><?= escape($account['name'] ?: $account['username']) ?></strong>?</p>
+        <form class="account-actions" method="post" action="?action=users&amp;id=<?= $editing ?>&amp;view=delete">
+            <input type="hidden" name="csrf" value="<?= $csrf ?>">
+            <button class="secondary danger" name="operation" value="delete">Confirmar eliminação</button>
+            <a href="?action=users">Cancelar</a>
+        </form>
+    </section>
+    <?php elseif (!$adding && !$editing): ?>
+    <p><a class="primary user-add" href="?action=users&amp;view=new#user-form">Adicionar utilizador</a></p>
+    <div class="users-table-scroll" role="region" aria-label="Lista de utilizadores" tabindex="0">
+        <table class="users-table" aria-label="Utilizadores">
+            <thead>
+                <tr>
+                    <th scope="col">Nome e utilizador</th>
+                    <th scope="col">Contactos</th>
+                    <th scope="col">Perfil</th>
+                    <th scope="col">Posição no clube</th>
+                    <th scope="col">Estado</th>
+                    <th scope="col">Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($accounts as $person): ?>
+                <?php $id = (int) $person['id']; $username = escape($person['username']); ?>
+                <tr>
+                    <th scope="row">
+                        <?= escape($person['name'] ?: $person['username']) ?>
+                        <?php if ($person['name'] !== ''): ?><small><?= $username ?></small><?php endif; ?>
+                    </th>
+                    <td>
+                        <?= escape($person['email'] ?: '—') ?>
+                        <?php if ($person['phone'] !== ''): ?><small><?= escape($person['phone']) ?></small><?php endif; ?>
+                    </td>
+                    <td><?= $roles[$person['role']] ?></td>
+                    <td><?= $positions[$person['club_position']] ?></td>
+                    <td><?= $person['active'] ? 'Ativa' : 'Inativa' ?></td>
+                    <td>
+                        <div class="account-actions">
+                            <a href="?action=users&amp;id=<?= $id ?>#user-form">Editar<span class="visually-hidden"> <?= $username ?></span></a>
+                            <?php if ($id !== $coach): ?>
+                            <form method="post" action="?action=users&amp;id=<?= $id ?>">
+                                <input type="hidden" name="csrf" value="<?= $csrf ?>">
+                                <button class="secondary" name="operation" value="<?= $person['active'] ? 'deactivate' : 'activate' ?>">
+                                    <?= $person['active'] ? 'Desativar' : 'Ativar' ?><span class="visually-hidden"> <?= $username ?></span>
+                                </button>
+                            </form>
+                            <a class="danger" href="?action=users&amp;id=<?= $id ?>&amp;view=delete">Apagar<span class="visually-hidden"> <?= $username ?></span></a>
+                            <?php endif; ?>
+                        </div>
+                    </td>
+                </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+    <?php else: ?>
     <section id="user-form">
         <h2><?= $editing ? 'Editar conta' : 'Nova conta' ?></h2>
         <form class="credentials user-form" method="post" action="?action=users<?= $editing ? '&amp;id=' . $editing : '' ?>#user-form">
@@ -166,10 +261,11 @@ $accounts = $pdo->query('SELECT id, username, name, email, phone, role, club_pos
             </label>
             <div class="account-actions">
                 <button class="primary">Guardar conta</button>
-                <?php if ($editing): ?><a href="?action=users">Cancelar</a><?php endif; ?>
+                <a href="?action=users">Cancelar</a>
             </div>
         </form>
     </section>
+    <?php endif; ?>
 </main>
 </body>
 </html>

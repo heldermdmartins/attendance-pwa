@@ -89,8 +89,15 @@ button { cursor: pointer; }
 .name { font-weight: 700; }
 .state { font-size: .85rem; color: #36564b; }
 .account-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; }
-.users-list { display: grid; gap: .65rem; padding: 0; list-style: none; }
-.users-list li { display: grid; gap: .3rem; padding: .8rem; background: white; border: 1px solid #b6c6bc; border-radius: .55rem; overflow-wrap: anywhere; }
+.user-add { display: inline-flex; align-items: center; text-decoration: none; }
+.users-table-scroll { overflow-x: auto; border: 1px solid #b6c6bc; border-radius: .65rem; }
+.users-table { width: 100%; border-collapse: collapse; background: white; }
+.users-table th, .users-table td { padding: .75rem; text-align: left; vertical-align: middle; }
+.users-table thead { background: #e0ebe3; }
+.users-table tbody tr + tr { border-top: 1px solid #d6e1d9; }
+.users-table small { display: block; margin-top: .25rem; font-weight: 400; }
+.users-table .account-actions { flex-wrap: nowrap; white-space: nowrap; }
+.danger { color: #912722; }
 .user-form { max-width: 30rem; }
 .user-form select { font: inherit; min-height: 44px; padding: .55rem .85rem; border: 1px solid #76877d; border-radius: .55rem; }
 .user-form .check { display: flex; align-items: center; gap: .5rem; }
