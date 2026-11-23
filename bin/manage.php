@@ -23,7 +23,8 @@ try {
         }
         echo "Perfil Administrador atribuído.\n";
     } elseif (in_array($command, ['coach', 'admin'], true)) {
-        if (!preg_match('/^[a-zA-Z0-9_.-]{1,64}$/D', $value)) {
+        $email = strlen($value) <= 254 && filter_var($value, FILTER_VALIDATE_EMAIL) ? $value : '';
+        if ($email === '' && !preg_match('/^[a-zA-Z0-9_.-]{1,64}$/D', $value)) {
             throw new InvalidArgumentException('Utilizador inválido.');
         }
         // Read from standard input so the password is never an argument or a file.
@@ -32,8 +33,8 @@ try {
             throw new InvalidArgumentException('A palavra-passe deve ter entre 12 e 72 bytes.');
         }
         $role = $command === 'admin' ? 'admin' : 'user';
-        $statement = db()->prepare('INSERT INTO coaches (username, password_hash, role) VALUES (?, ?, ?)');
-        $statement->execute([$value, password_hash($password, PASSWORD_BCRYPT), $role]);
+        $statement = db()->prepare('INSERT INTO coaches (username, password_hash, role, email) VALUES (?, ?, ?, ?)');
+        $statement->execute([$value, password_hash($password, PASSWORD_BCRYPT), $role, $email]);
         echo "Conta criada.\n";
     } else {
         if (!mb_check_encoding($value, 'UTF-8') || mb_strlen($value) > 150) {

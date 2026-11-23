@@ -248,7 +248,7 @@ try {
         <form class="credentials" method="post" action="?action=login">
             <input type="hidden" name="csrf" value="<?= $csrf ?>">
             <?php if ($error !== ''): ?><p class="error" role="alert"><?= escape($error) ?></p><?php endif; ?>
-            <label>Utilizador <input name="username" autocomplete="username" required maxlength="64"></label>
+            <label>Email <input name="username" autocomplete="username" inputmode="email" autocapitalize="none" spellcheck="false" required maxlength="254"></label>
             <label>Palavra-passe <input name="password" type="password" autocomplete="current-password" required></label>
             <button class="primary">Entrar</button>
         </form>

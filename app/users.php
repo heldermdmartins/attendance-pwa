@@ -16,7 +16,7 @@ function beginAccountChange(PDO $pdo, int $coach): void
 
 $roles = ['user' => 'Utilizador', 'admin' => 'Administrador'];
 $positions = ['coach' => 'Treinador', 'delegate' => 'Delegado'];
-$fields = ['username', 'name', 'email', 'phone', 'role', 'club_position'];
+$fields = ['name', 'email', 'phone', 'role', 'club_position'];
 $values = ['username' => '', 'name' => '', 'email' => '', 'phone' => '', 'role' => 'user', 'club_position' => 'coach'];
 $editing = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
 if (isset($_GET['id']) && !$editing) {
@@ -95,9 +95,7 @@ if ($method === 'POST') {
     $password = is_string($_POST['password'] ?? null) ? $_POST['password'] : '';
     $validPassword = strlen($password) >= 12 && strlen($password) <= 72 && !str_contains($password, "\0");
 
-    if (!preg_match('/^[a-zA-Z0-9_.-]{1,64}$/D', $values['username'])) {
-        $error = 'Indique um nome de utilizador válido. Use letras sem acentos, números, pontos, hífen ou underscore.';
-    } elseif ($values['name'] === '' || !mb_check_encoding($values['name'], 'UTF-8') || mb_strlen($values['name']) > 150) {
+    if ($values['name'] === '' || !mb_check_encoding($values['name'], 'UTF-8') || mb_strlen($values['name']) > 150) {
         $error = 'Indique um nome com até 150 caracteres.';
     } elseif (strlen($values['email']) > 254 || !filter_var($values['email'], FILTER_VALIDATE_EMAIL)) {
         $error = 'Indique um endereço de email válido.';
@@ -112,6 +110,7 @@ if ($method === 'POST') {
         try {
             beginAccountChange($pdo, $coach);
             $valuesToSave = array_map(static fn ($field) => $values[$field], $fields);
+            array_unshift($valuesToSave, $values['email']);
             $valuesToSave[] = (int) $active;
             $hash = $password !== '' ? password_hash($password, PASSWORD_BCRYPT) : null;
             if ($editing) {
@@ -138,7 +137,7 @@ if ($method === 'POST') {
             if (($exception->errorInfo[1] ?? null) !== 1062) {
                 throw $exception;
             }
-            $error = 'Já existe uma conta com esse nome de utilizador.';
+            $error = 'Já existe uma conta com esse email.';
         }
     }
     http_response_code(422);
@@ -190,7 +189,7 @@ $accounts = $pdo->query('SELECT id, username, name, email, phone, role, club_pos
         <table class="users-table" role="table" aria-label="Utilizadores">
             <thead role="rowgroup">
                 <tr role="row">
-                    <th scope="col" role="columnheader">Nome e utilizador</th>
+                    <th scope="col" role="columnheader">Nome</th>
                     <th scope="col" role="columnheader">Contactos</th>
                     <th scope="col" role="columnheader">Perfil</th>
                     <th scope="col" role="columnheader">Posição no clube</th>
@@ -204,7 +203,7 @@ $accounts = $pdo->query('SELECT id, username, name, email, phone, role, club_pos
                 <tr role="row">
                     <th scope="row" role="rowheader">
                         <?= escape($person['name'] ?: $person['username']) ?>
-                        <?php if ($person['name'] !== ''): ?><small><?= $username ?></small><?php endif; ?>
+                        <?php if ($person['name'] !== '' && $person['email'] === ''): ?><small><?= $username ?></small><?php endif; ?>
                     </th>
                     <td role="cell">
                         <?= escape($person['email'] ?: '—') ?>
@@ -239,9 +238,8 @@ $accounts = $pdo->query('SELECT id, username, name, email, phone, role, club_pos
             <input type="hidden" name="csrf" value="<?= $csrf ?>">
             <?php if ($error !== ''): ?><p class="error" role="alert"><?= escape($error) ?></p><?php endif; ?>
             <label>Nome <input name="name" value="<?= escape($values['name']) ?>" maxlength="150" required></label>
-            <label>Email <input name="email" type="email" value="<?= escape($values['email']) ?>" maxlength="254" required></label>
+            <label>Email de acesso <input name="email" type="email" value="<?= escape($values['email']) ?>" maxlength="254" required></label>
             <label>Telemóvel <input name="phone" type="tel" value="<?= escape($values['phone']) ?>" maxlength="32" required></label>
-            <label>Nome de utilizador <input name="username" value="<?= escape($values['username']) ?>" maxlength="64" autocomplete="off" required></label>
             <label>Perfil
                 <select name="role" <?= $self ? 'disabled' : '' ?>>
                     <?php foreach ($roles as $key => $label): ?>

@@ -19,6 +19,7 @@
 !/database/schema.sql
 !/database/add-user-management.sql
 !/database/add-athlete-details.sql
+!/database/use-email-login.sql
 !/public/
 /public/*
 !/public/index.php

@@ -44,3 +44,5 @@ Em instalações existentes, aplique `database/add-athlete-details.sql` antes de
 ## Calendário e histórico
 
 O calendário de treinos está definido em `app/training-schedule.php`. A grelha abre no treino de hoje, quando houver, ou no próximo treino. As marcações são feitas no próprio dia, no fuso horário de Lisboa. A consulta por data apresenta os registos guardados, incluindo os anteriores à introdução do calendário.
+
+Em instalações que antecedem o acesso por email, aplique `database/use-email-login.sql` com uma conta de manutenção. Resolva primeiro eventuais emails duplicados. As contas com email passam a usá-lo para entrar, com a mesma palavra-passe. Para contas antigas sem email, o identificador anterior mantém-se até ser preenchido o campo **Email de acesso**.
