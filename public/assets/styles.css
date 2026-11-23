@@ -9,9 +9,11 @@
 body { margin: 0; }
 main { width: min(100% - 2rem, 60rem); margin: 2rem auto; }
 .login-page {
+    display: flex;
+    flex-direction: column;
     min-height: 100vh;
     min-height: 100svh;
-    padding: max(43vh, 24vw) 0 2.5rem;
+    padding: max(43vh, 24vw) 0 max(1rem, env(safe-area-inset-bottom));
     padding-top: max(43svh, 24vw);
     color: #f2f5ef;
     background: #052c21 url("login-background-desktop.webp") center top / max(100%, 178svh) auto no-repeat;
@@ -205,7 +207,8 @@ button { cursor: pointer; }
     text-align: center;
 }
 .login-page .app-version {
-    margin-top: 0;
+    margin-top: auto;
+    padding-top: 1rem;
     padding-bottom: 0;
     color: #d9f0df;
 }
