@@ -211,7 +211,7 @@ try {
     <title>Registo de presenças</title>
     <link rel="manifest" href="manifest.webmanifest?v=2">
     <link rel="apple-touch-icon" sizes="180x180" href="assets/sporting-icon-180.png">
-    <link rel="stylesheet" href="assets/styles.css?v=8">
+    <link rel="stylesheet" href="assets/styles.css?v=9">
     <script src="assets/app.js" defer></script>
 </head>
 <body<?= $coach === null ? ' class="login-page"' : '' ?>>
@@ -254,5 +254,6 @@ try {
         </ul>
     <?php endif; ?>
 </main>
+<footer class="app-version">Versão <?= APP_VERSION ?></footer>
 </body>
 </html>

@@ -193,3 +193,17 @@ button { cursor: pointer; }
 }
 .app-menu a:hover, .app-menu button:hover { text-decoration: underline; }
 .app-menu :focus-visible { outline-color: #f9d38b; }
+
+.app-version {
+    width: min(100% - 2rem, 60rem);
+    margin: 1.25rem auto 0;
+    padding-bottom: 1.25rem;
+    color: #36564b;
+    font-size: .875rem;
+    text-align: center;
+}
+.login-page .app-version {
+    margin-top: 0;
+    padding-bottom: 0;
+    color: #d9f0df;
+}
