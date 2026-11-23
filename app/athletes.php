@@ -179,7 +179,7 @@ function saveAthletePhoto(int $id, array $upload): void
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Gestão de atletas</title>
-    <link rel="stylesheet" href="assets/styles.css?v=15">
+    <link rel="stylesheet" href="assets/styles.css?v=19">
     <script src="assets/app.js?v=2" defer></script>
 </head>
 <body>
@@ -215,7 +215,7 @@ function saveAthletePhoto(int $id, array $upload): void
                     <?php if ($field === 'birth_date'): ?>
                         <input type="date" name="birth_date" value="<?= escape($details[$field] ?? '') ?>" max="<?= $today ?>">
                     <?php elseif ($field === 'category'): ?>
-                        <span class="athlete-select">
+                        <span class="form-select">
                             <select name="category">
                                 <option value="">Selecionar escalão</option>
                                 <?php foreach ($categories as $category): ?>
@@ -227,7 +227,7 @@ function saveAthletePhoto(int $id, array $upload): void
                             </svg>
                         </span>
                     <?php elseif ($field === 'season'): ?>
-                        <span class="athlete-select">
+                        <span class="form-select">
                             <select name="season">
                                 <option value="">Selecionar época</option>
                                 <?php foreach ($seasons as $season): ?>

@@ -248,13 +248,13 @@ button { cursor: pointer; }
 }
 .athlete-directory-portrait { flex: 0 0 2.75rem; width: 2.75rem; height: 2.75rem; }
 
-.athlete-select { position: relative; display: block; min-width: 0; }
-.athlete-select select {
+.form-select { position: relative; display: block; min-width: 0; }
+.form-select select {
     appearance: none;
     width: 100%;
     padding-inline-end: 2.5rem;
 }
-.athlete-select svg {
+.form-select svg {
     position: absolute;
     inset-inline-end: .85rem;
     top: 50%;

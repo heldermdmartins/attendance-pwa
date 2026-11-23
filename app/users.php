@@ -15,7 +15,7 @@ function beginAccountChange(PDO $pdo, int $coach): void
 }
 
 $roles = ['user' => 'Utilizador', 'admin' => 'Administrador'];
-$positions = ['coach' => 'Treinador', 'delegate' => 'Delegado'];
+$positions = ['coach' => 'Treinador', 'delegate' => 'Delegado', 'admin' => 'Administrador'];
 $fields = ['name', 'email', 'phone', 'role', 'club_position'];
 $values = ['username' => '', 'name' => '', 'email' => '', 'phone' => '', 'role' => 'user', 'club_position' => 'coach'];
 $editing = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
@@ -161,7 +161,7 @@ $accounts = $pdo->query('SELECT id, username, name, email, phone, role, club_pos
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Gestão de utilizadores</title>
-    <link rel="stylesheet" href="assets/styles.css?v=15">
+    <link rel="stylesheet" href="assets/styles.css?v=19">
     <script src="assets/app.js?v=2" defer></script>
 </head>
 <body>
@@ -241,18 +241,28 @@ $accounts = $pdo->query('SELECT id, username, name, email, phone, role, club_pos
             <label>Email de acesso <input name="email" type="email" value="<?= escape($values['email']) ?>" maxlength="254" required></label>
             <label>Telemóvel <input name="phone" type="tel" value="<?= escape($values['phone']) ?>" maxlength="32" required></label>
             <label>Perfil
-                <select name="role" <?= $self ? 'disabled' : '' ?>>
-                    <?php foreach ($roles as $key => $label): ?>
-                    <option value="<?= $key ?>" <?= $values['role'] === $key ? 'selected' : '' ?>><?= $label ?></option>
-                    <?php endforeach; ?>
-                </select>
+                <span class="form-select">
+                    <select name="role" <?= $self ? 'disabled' : '' ?>>
+                        <?php foreach ($roles as $key => $label): ?>
+                        <option value="<?= $key ?>" <?= $values['role'] === $key ? 'selected' : '' ?>><?= $label ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+                        <path d="m6 9 6 6 6-6"/>
+                    </svg>
+                </span>
             </label>
             <label>Posição no clube
-                <select name="club_position">
-                    <?php foreach ($positions as $key => $label): ?>
-                    <option value="<?= $key ?>" <?= $values['club_position'] === $key ? 'selected' : '' ?>><?= $label ?></option>
-                    <?php endforeach; ?>
-                </select>
+                <span class="form-select">
+                    <select name="club_position">
+                        <?php foreach ($positions as $key => $label): ?>
+                        <option value="<?= $key ?>" <?= $values['club_position'] === $key ? 'selected' : '' ?>><?= $label ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+                        <path d="m6 9 6 6 6-6"/>
+                    </svg>
+                </span>
             </label>
             <label class="check"><input type="checkbox" name="active" value="1" <?= $active ? 'checked' : '' ?> <?= $self ? 'disabled' : '' ?>> Conta ativa</label>
             <label><?= $editing ? 'Nova palavra-passe (opcional)' : 'Palavra-passe' ?>

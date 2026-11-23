@@ -6,7 +6,7 @@ CREATE TABLE coaches (
   email VARCHAR(254) NOT NULL DEFAULT '',
   phone VARCHAR(32) NOT NULL DEFAULT '',
   role ENUM('admin', 'user') NOT NULL DEFAULT 'user',
-  club_position ENUM('coach', 'delegate') NOT NULL DEFAULT 'coach',
+  club_position ENUM('coach', 'delegate', 'admin') NOT NULL DEFAULT 'coach',
   active BOOLEAN NOT NULL DEFAULT TRUE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
