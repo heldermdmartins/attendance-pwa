@@ -14,7 +14,7 @@ main { width: min(100% - 2rem, 60rem); margin: 2rem auto; }
     padding: max(43vh, 24vw) 0 2.5rem;
     padding-top: max(43svh, 24vw);
     color: #f2f5ef;
-    background: #052c21 url("login-background.webp") center top / max(100%, 178svh) auto no-repeat;
+    background: #052c21 url("login-background-desktop.webp") center top / max(100%, 178svh) auto no-repeat;
 }
 main.login {
     width: min(100% - 3rem, 25rem);

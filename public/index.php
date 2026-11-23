@@ -211,7 +211,7 @@ try {
     <title>Registo de presenças</title>
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="apple-touch-icon" href="assets/icon-192.png">
-    <link rel="stylesheet" href="assets/styles.css?v=4">
+    <link rel="stylesheet" href="assets/styles.css?v=5">
     <script src="assets/app.js" defer></script>
 </head>
 <body<?= $coach === null ? ' class="login-page"' : '' ?>>
