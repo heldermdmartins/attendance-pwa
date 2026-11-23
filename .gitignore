@@ -23,7 +23,8 @@
 /public/assets/*
 !/public/assets/app.js
 !/public/assets/styles.css
-!/public/assets/icon-192.png
-!/public/assets/icon-512.png
+!/public/assets/sporting-icon-180.png
+!/public/assets/sporting-icon-192.png
+!/public/assets/sporting-icon-512.png
 !/public/assets/login-background-desktop.webp
 !/public/assets/login-background-mobile.webp
