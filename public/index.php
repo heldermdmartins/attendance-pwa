@@ -211,22 +211,14 @@ try {
     <title>Registo de presenças</title>
     <link rel="manifest" href="manifest.webmanifest?v=2">
     <link rel="apple-touch-icon" sizes="180x180" href="assets/sporting-icon-180.png">
-    <link rel="stylesheet" href="assets/styles.css?v=5">
+    <link rel="stylesheet" href="assets/styles.css?v=8">
     <script src="assets/app.js" defer></script>
 </head>
 <body<?= $coach === null ? ' class="login-page"' : '' ?>>
+<?php if ($coach !== null) require __DIR__ . '/../app/navigation.php'; ?>
 <main class="<?= $coach === null ? 'login' : '' ?>">
     <header>
         <h1>Registo de presenças</h1>
-        <?php if ($coach !== null): ?>
-            <div class="account-actions">
-            <?php if ($isAdmin): ?><a href="?action=users">Gerir utilizadores</a><?php endif; ?>
-            <form method="post" action="?action=logout">
-                <input type="hidden" name="csrf" value="<?= $csrf ?>">
-                <button class="secondary">Sair</button>
-            </form>
-            </div>
-        <?php endif; ?>
     </header>
     <?php if ($coach === null): ?>
         <form class="credentials" method="post" action="?action=login">

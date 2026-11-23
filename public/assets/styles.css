@@ -151,3 +151,45 @@ button { cursor: pointer; }
         padding-inline: .25rem;
     }
 }
+
+.app-menu {
+    color: #f2f5ef;
+    background: var(--green);
+}
+.app-menu-inner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: .25rem .65rem;
+    width: min(100% - 2rem, 60rem);
+    margin: 0 auto;
+    padding: .5rem 0;
+}
+.app-menu-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .25rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+.app-menu a, .app-menu button {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: .35rem .6rem;
+    border: 1px solid transparent;
+    border-radius: .45rem;
+    color: inherit;
+    background: transparent;
+    font-weight: 600;
+    text-decoration: none;
+}
+.app-menu a[aria-current="page"] {
+    border-color: #bdd6c5;
+    color: #142f29;
+    background: #d9f0df;
+}
+.app-menu a:hover, .app-menu button:hover { text-decoration: underline; }
+.app-menu :focus-visible { outline-color: #f9d38b; }

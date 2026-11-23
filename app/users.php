@@ -162,13 +162,13 @@ $accounts = $pdo->query('SELECT id, username, name, email, phone, role, club_pos
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Gestão de utilizadores</title>
-    <link rel="stylesheet" href="assets/styles.css?v=7">
+    <link rel="stylesheet" href="assets/styles.css?v=8">
 </head>
 <body>
+<?php require __DIR__ . '/navigation.php'; ?>
 <main>
     <header>
         <h1>Gestão de utilizadores</h1>
-        <a href="./">Presenças</a>
     </header>
     <?php if ($saved !== ''): ?><p role="status"><?= escape($saved) ?></p><?php endif; ?>
     <?php if ($actionError !== ''): ?><p class="error" role="alert"><?= escape($actionError) ?></p><?php endif; ?>
