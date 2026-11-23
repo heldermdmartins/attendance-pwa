@@ -179,7 +179,7 @@ function saveAthletePhoto(int $id, array $upload): void
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Gestão de atletas</title>
-    <link rel="stylesheet" href="assets/styles.css?v=12">
+    <link rel="stylesheet" href="assets/styles.css?v=13">
 </head>
 <body>
 <?php require __DIR__ . '/navigation.php'; ?>
@@ -221,12 +221,18 @@ function saveAthletePhoto(int $id, array $upload): void
                             <?php endforeach; ?>
                         </select>
                     <?php elseif ($field === 'season'): ?>
-                        <select name="season">
-                            <option value="">Selecionar época</option>
-                            <?php foreach ($seasons as $season): ?>
-                                <option value="<?= escape($season) ?>" <?= ($details['season'] ?? '') === $season ? 'selected' : '' ?>><?= escape($season) ?></option>
-                            <?php endforeach; ?>
-                        </select>
+                        <span class="season-picker">
+                            <select name="season">
+                                <option value="">Selecionar época</option>
+                                <?php foreach ($seasons as $season): ?>
+                                    <option value="<?= escape($season) ?>" <?= ($details['season'] ?? '') === $season ? 'selected' : '' ?>><?= escape($season) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+                                <rect x="3" y="5" width="18" height="16" rx="2"/>
+                                <path d="M3 10h18M8 3v4m8-4v4"/>
+                            </svg>
+                        </span>
                     <?php else: ?>
                         <input name="<?= $field ?>" value="<?= escape($details[$field] ?? '') ?>" maxlength="255"
                             <?= in_array($field, ['phone', 'guardian_phone'], true) ? 'type="tel"' : '' ?>>
