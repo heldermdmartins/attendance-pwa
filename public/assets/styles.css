@@ -8,7 +8,37 @@
 * { box-sizing: border-box; }
 body { margin: 0; }
 main { width: min(100% - 2rem, 60rem); margin: 2rem auto; }
-main.login { max-width: 25rem; margin-top: clamp(2rem, 12vh, 8rem); }
+.login-page {
+    display: grid;
+    grid-template-columns: minmax(17rem, 35%) 1fr;
+    align-items: stretch;
+    min-height: 100vh;
+    min-height: 100svh;
+    background: #102f28;
+}
+.login-page::before {
+    content: "";
+    background: #163e36 url("login-background.webp") center / cover no-repeat;
+}
+main.login {
+    align-self: center;
+    width: min(100% - 2rem, 27rem);
+    margin: 2rem auto;
+    padding: clamp(1.25rem, 4vw, 2rem);
+    background: #f2f5ef;
+    border-radius: 1rem;
+}
+.login h1 { margin: 0 0 1.25rem; }
+.login input { min-width: 0; }
+@media (max-width: 42rem) {
+    .login-page {
+        grid-template-columns: 1fr;
+        grid-template-rows: clamp(15rem, 38svh, 21rem) auto;
+        background: #102f28;
+    }
+    .login-page::before { background-size: min(100%, 22rem) auto; }
+    main.login { align-self: start; margin-top: .75rem; }
+}
 header, .summary {
     display: flex;
     justify-content: space-between;

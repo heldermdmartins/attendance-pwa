@@ -211,10 +211,10 @@ try {
     <title>Registo de presenças</title>
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="apple-touch-icon" href="assets/icon-192.png">
-    <link rel="stylesheet" href="assets/styles.css">
+    <link rel="stylesheet" href="assets/styles.css?v=2">
     <script src="assets/app.js" defer></script>
 </head>
-<body>
+<body<?= $coach === null ? ' class="login-page"' : '' ?>>
 <main class="<?= $coach === null ? 'login' : '' ?>">
     <header>
         <h1>Registo de presenças</h1>
