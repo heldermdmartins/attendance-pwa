@@ -40,3 +40,7 @@ Crie uma conta separada para administração repetindo a leitura silenciosa de p
 ## Gestão de atletas
 
 Em instalações existentes, aplique `database/add-athlete-details.sql` antes de atualizar a aplicação. A migração mantém os IDs dos atletas e as presenças existentes. Na área privada, um administrador pode criar atletas, editar os dados e gerir retratos. O carregamento aceita JPEG, PNG e WebP e requer a extensão GD com suporte WebP. O ficheiro é convertido no servidor e guardado em `storage/photos/`, fora da raiz pública.
+
+## Calendário e histórico
+
+O calendário de treinos está definido em `app/training-schedule.php`. A grelha abre no treino de hoje, quando houver, ou no próximo treino. As marcações são feitas no próprio dia, no fuso horário de Lisboa. A consulta por data apresenta os registos guardados, incluindo os anteriores à introdução do calendário.

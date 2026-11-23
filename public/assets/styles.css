@@ -288,3 +288,27 @@ button { cursor: pointer; }
     .app-menu-panel a { width: 100%; }
     .app-menu-panel form { margin-top: .35rem; border-top: 1px solid #638d7d; }
 }
+
+.training-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .75rem 1.25rem;
+    margin-bottom: 1rem;
+}
+.training-controls form {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: .5rem;
+}
+.training-controls label { flex: 1 1 auto; min-width: 0; }
+.training-controls select {
+    min-height: 44px;
+    padding: .55rem .65rem;
+    border: 1px solid #76877d;
+    border-radius: .55rem;
+    background: white;
+    color: inherit;
+    font: inherit;
+}
+.history-card { text-align: center; }

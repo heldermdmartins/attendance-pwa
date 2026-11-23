@@ -10,6 +10,7 @@
 !/app/navigation.php
 !/app/athlete-profile.php
 !/app/athletes.php
+!/app/training-schedule.php
 !/bin/
 /bin/*
 !/bin/manage.php

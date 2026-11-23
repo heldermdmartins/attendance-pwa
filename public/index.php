@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require __DIR__ . '/../app/bootstrap.php';
 require __DIR__ . '/../app/athlete-profile.php';
+require __DIR__ . '/../app/training-schedule.php';
 
 function escape(string $value): string
 {
@@ -65,7 +66,8 @@ try {
     }
 
     $method = $_SERVER['REQUEST_METHOD'];
-    $today = date('Y-m-d');
+    $todayDate = new DateTimeImmutable('today');
+    $today = $todayDate->format('Y-m-d');
     $error = '';
     if (in_array($route, ['users', 'athletes'], true)) {
         if ($coach === null) {
@@ -97,8 +99,8 @@ try {
             || !is_bool($data['present'] ?? null) || !is_string($data['date'] ?? null)) {
             respond(422, ['error' => 'Pedido inválido.']);
         }
-        if ($data['date'] !== $today) {
-            respond(409, ['error' => 'O dia mudou. Atualize a página.']);
+        if ($data['date'] !== $today || trainingSchedule($todayDate) === null) {
+            respond(409, ['error' => 'Só é possível marcar presenças no dia de um treino.']);
         }
 
         $query = db()->prepare('SELECT id FROM athletes WHERE id = ? AND active = 1');
@@ -185,13 +187,34 @@ try {
 
     $athletes = [];
     if ($coach !== null) {
-        $query = db()->prepare(
-            'SELECT a.id, a.name, COALESCE(r.present, 0) AS present FROM athletes a
-             LEFT JOIN attendance r ON r.athlete_id = a.id AND r.training_date = ?
-             WHERE a.active = 1 ORDER BY a.name, a.id'
-        );
-        $query->execute([$today]);
-        $athletes = $query->fetchAll(PDO::FETCH_ASSOC);
+        $upcoming = upcomingTrainings($todayDate);
+        $selected = array_key_first($upcoming);
+        $requested = $_GET['date'] ?? null;
+        if ($requested !== null) {
+            $parsed = is_string($requested) && preg_match('/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/D', $requested)
+                ? DateTimeImmutable::createFromFormat('!Y-m-d', $requested) : false;
+            if ($parsed && $parsed->format('Y-m-d') === $requested
+                && ($requested < $today || isset($upcoming[$requested]))) {
+                $selected = $requested;
+            } else {
+                $error = 'Escolhe um treino da lista ou uma data anterior.';
+            }
+        }
+        $selectedDate = new DateTimeImmutable($selected);
+        $training = trainingSchedule($selectedDate);
+        $history = $selected < $today;
+        $canMark = $selected === $today && $training !== null;
+        if ($history || $canMark) {
+            $query = db()->prepare($history
+                ? 'SELECT a.id, a.name, r.present FROM attendance r
+                   INNER JOIN athletes a ON a.id = r.athlete_id
+                   WHERE r.training_date = ? ORDER BY a.name, a.id'
+                : 'SELECT a.id, a.name, COALESCE(r.present, 0) AS present FROM athletes a
+                   LEFT JOIN attendance r ON r.athlete_id = a.id AND r.training_date = ?
+                   WHERE a.active = 1 ORDER BY a.name, a.id');
+            $query->execute([$selected]);
+            $athletes = $query->fetchAll(PDO::FETCH_ASSOC);
+        }
     }
     session_write_close();
 } catch (Throwable $exception) {
@@ -212,7 +235,7 @@ try {
     <title>Registo de presenças</title>
     <link rel="manifest" href="manifest.webmanifest?v=2">
     <link rel="apple-touch-icon" sizes="180x180" href="assets/sporting-icon-180.png">
-    <link rel="stylesheet" href="assets/styles.css?v=15">
+    <link rel="stylesheet" href="assets/styles.css?v=16">
     <script src="assets/app.js?v=2" defer></script>
 </head>
 <body<?= $coach === null ? ' class="login-page"' : '' ?>>
@@ -230,18 +253,63 @@ try {
             <button class="primary">Entrar</button>
         </form>
     <?php else: ?>
+        <section class="training-controls" aria-label="Calendário de treinos">
+            <form method="get">
+                <label>Treino
+                    <select name="date">
+                        <?php if ($history): ?>
+                            <option value="<?= $selected ?>" selected><?= $selectedDate->format('d/m/Y') ?> (histórico)</option>
+                        <?php endif; ?>
+                        <?php foreach ($upcoming as $date => $label): ?>
+                            <option value="<?= $date ?>" <?= $date === $selected ? 'selected' : '' ?>><?= escape($label) ?><?= $date === $today ? ' (hoje)' : '' ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </label>
+                <button class="secondary">Ver treino</button>
+            </form>
+            <form method="get">
+                <label>Consultar marcações anteriores
+                    <input type="date" name="date" value="<?= $history ? $selected : '' ?>"
+                           max="<?= $todayDate->modify('-1 day')->format('Y-m-d') ?>" required>
+                </label>
+                <button class="secondary">Consultar</button>
+            </form>
+        </section>
+        <?php if ($error !== ''): ?><p class="error" role="alert"><?= escape($error) ?></p><?php endif; ?>
         <div class="summary">
-            <time datetime="<?= $today ?>"><?= date('d/m/Y') ?></time>
-            <strong id="count"><?= array_sum(array_column($athletes, 'present')) ?> / <?= count($athletes) ?> presentes</strong>
+            <div>
+                <time datetime="<?= $selected ?>"><?= $selectedDate->format('d/m/Y') ?></time>
+                <?php if ($training): ?>
+                    <div><?= escape($training[1]) ?></div>
+                    <div><?= escape($training[2]) ?></div>
+                <?php endif; ?>
+            </div>
+            <?php if ($canMark): ?>
+                <strong id="count"><?= array_sum(array_column($athletes, 'present')) ?> / <?= count($athletes) ?> presentes</strong>
+            <?php elseif ($history): ?>
+                <?php $presentCount = array_sum(array_column($athletes, 'present')); ?>
+                <strong><?= $presentCount ?> <?= $presentCount === 1 ? 'presente' : 'presentes' ?></strong>
+            <?php endif; ?>
         </div>
-        <p class="feedback" id="feedback" role="status" aria-atomic="true"></p>
-        <noscript><p>Ative o JavaScript para registar presenças.</p></noscript>
-        <?php if (!$athletes): ?><p>Ainda não há atletas ativos.</p><?php endif; ?>
-        <ul class="grid" id="roster" data-csrf="<?= $csrf ?>" data-date="<?= $today ?>">
+        <?php if ($canMark): ?>
+            <p class="feedback" id="feedback" role="status" aria-atomic="true"></p>
+            <noscript><p>Ative o JavaScript para registar presenças.</p></noscript>
+            <?php if (!$athletes): ?><p>Ainda não há atletas ativos.</p><?php endif; ?>
+        <?php elseif ($history): ?>
+            <p><?= $athletes ? 'Histórico de marcações' : 'Sem marcações nesta data.' ?></p>
+        <?php else: ?>
+            <p>As marcações abrem no dia do treino.</p>
+        <?php endif; ?>
+        <?php if ($athletes): ?>
+        <ul class="grid"<?= $canMark ? ' id="roster" data-csrf="' . $csrf . '" data-date="' . $selected . '"' : '' ?>>
             <?php foreach ($athletes as $athlete): ?>
                 <?php $id = (int) $athlete['id']; $present = (bool) $athlete['present']; ?>
                 <li>
+                    <?php if ($canMark): ?>
                     <button type="button" class="athlete" data-id="<?= $id ?>" aria-pressed="<?= $present ? 'true' : 'false' ?>">
+                    <?php else: ?>
+                    <div class="athlete history-card">
+                    <?php endif; ?>
                         <span class="portrait" aria-hidden="true">
                             <?= escape(athleteInitials($athlete['name'])) ?>
                             <?php if (is_readable(athletePhotoPath($id))): ?>
@@ -249,11 +317,14 @@ try {
                             <?php endif; ?>
                         </span>
                         <span class="name" id="athlete-<?= $id ?>"><?= escape($athlete['name']) ?></span>
-                        <span class="state" aria-hidden="true"><?= $present ? '✓ Presente' : 'Por marcar' ?></span>
-                    </button>
+                        <span class="state"<?= $canMark ? ' aria-hidden="true"' : '' ?>>
+                            <?= $present ? '✓ Presente' : ($history ? 'Desmarcada' : 'Por marcar') ?>
+                        </span>
+                    <?= $canMark ? '</button>' : '</div>' ?>
                 </li>
             <?php endforeach; ?>
         </ul>
+        <?php endif; ?>
     <?php endif; ?>
 </main>
 <footer class="app-version">Versão <?= APP_VERSION ?></footer>
