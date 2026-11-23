@@ -234,8 +234,7 @@ function saveAthletePhoto(int $id, array $upload): void
                                 <?php endforeach; ?>
                             </select>
                             <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-                                <rect x="3" y="5" width="18" height="16" rx="2"/>
-                                <path d="M3 10h18M8 3v4m8-4v4"/>
+                                <path d="m6 9 6 6 6-6"/>
                             </svg>
                         </span>
                     <?php else: ?>
