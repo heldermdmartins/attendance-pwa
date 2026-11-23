@@ -42,6 +42,13 @@ if ($method === 'POST') {
                 break;
             }
             $details[$field] = trim($value);
+            if ($field === 'birth_date' && $details[$field] !== '') {
+                $date = DateTimeImmutable::createFromFormat('!Y-m-d', $details[$field]);
+                if (!$date || $date->format('Y-m-d') !== $details[$field] || $details[$field] > $today) {
+                    $error = 'Indica uma data de nascimento válida e que não seja futura.';
+                    break;
+                }
+            }
         }
         if ($name === '' || !mb_check_encoding($name, 'UTF-8') || mb_strlen($name) > 150) {
             $error = 'Indica um nome válido com até 150 caracteres.';
@@ -176,8 +183,12 @@ function saveAthletePhoto(int $id, array $upload): void
             <label>Nome <input name="name" value="<?= escape($name) ?>" maxlength="150" required></label>
             <?php foreach (ATHLETE_FIELDS as $field => $label): ?>
                 <label><?= escape($label) ?>
-                    <input name="<?= $field ?>" value="<?= escape($details[$field] ?? '') ?>" maxlength="255"
-                        <?= in_array($field, ['phone', 'guardian_phone'], true) ? 'type="tel"' : '' ?>>
+                    <?php if ($field === 'birth_date'): ?>
+                        <input type="date" name="birth_date" value="<?= escape($details[$field] ?? '') ?>" max="<?= $today ?>">
+                    <?php else: ?>
+                        <input name="<?= $field ?>" value="<?= escape($details[$field] ?? '') ?>" maxlength="255"
+                            <?= in_array($field, ['phone', 'guardian_phone'], true) ? 'type="tel"' : '' ?>>
+                    <?php endif; ?>
                 </label>
             <?php endforeach; ?>
             <label class="check"><input type="checkbox" name="active" value="1" <?= $active ? 'checked' : '' ?>> Atleta ativo</label>
