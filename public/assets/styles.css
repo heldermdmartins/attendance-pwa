@@ -312,3 +312,8 @@ button { cursor: pointer; }
     font: inherit;
 }
 .history-card { text-align: center; }
+
+.attendance-summary { flex-wrap: wrap; gap: .5rem 1rem; }
+.training-meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: .2rem .6rem; }
+.training-meta time, .training-meta span { white-space: nowrap; }
+.training-meta span::before { content: "·"; margin-inline-end: .6rem; }

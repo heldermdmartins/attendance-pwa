@@ -235,7 +235,7 @@ try {
     <title>Registo de presenças</title>
     <link rel="manifest" href="manifest.webmanifest?v=2">
     <link rel="apple-touch-icon" sizes="180x180" href="assets/sporting-icon-180.png">
-    <link rel="stylesheet" href="assets/styles.css?v=16">
+    <link rel="stylesheet" href="assets/styles.css?v=17">
     <script src="assets/app.js?v=2" defer></script>
 </head>
 <body<?= $coach === null ? ' class="login-page"' : '' ?>>
@@ -276,12 +276,12 @@ try {
             </form>
         </section>
         <?php if ($error !== ''): ?><p class="error" role="alert"><?= escape($error) ?></p><?php endif; ?>
-        <div class="summary">
-            <div>
+        <div class="summary attendance-summary">
+            <div class="training-meta">
                 <time datetime="<?= $selected ?>"><?= $selectedDate->format('d/m/Y') ?></time>
                 <?php if ($training): ?>
-                    <div><?= escape($training[1]) ?></div>
-                    <div><?= escape($training[2]) ?></div>
+                    <span><?= escape($training[1]) ?></span>
+                    <span><?= escape($training[2]) ?></span>
                 <?php endif; ?>
             </div>
             <?php if ($canMark): ?>
