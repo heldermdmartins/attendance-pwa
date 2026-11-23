@@ -10,6 +10,7 @@ $creating = !$id && (($_GET['view'] ?? '') === 'new');
 $pdo = db();
 $name = '';
 $details = [];
+$categories = ['Bambi', 'Escolar', 'Infantil', 'Iniciado', 'Cadete', 'Juvenil', 'Júnior', 'Sénior', 'Master'];
 $active = true;
 if ($id) {
     $statement = $pdo->prepare('SELECT name, details, active FROM athletes WHERE id = ?');
@@ -24,6 +25,10 @@ if ($id) {
     $active = (bool) $athlete['active'];
 }
 
+$storedCategory = $details['category'] ?? '';
+if ($storedCategory !== '' && !in_array($storedCategory, $categories, true)) {
+    $categories[] = $storedCategory;
+}
 $error = '';
 if ($method === 'POST') {
     if (!is_string($_POST['csrf'] ?? null) || !hash_equals($csrf, $_POST['csrf'])) {
@@ -42,6 +47,10 @@ if ($method === 'POST') {
                 break;
             }
             $details[$field] = trim($value);
+            if ($field === 'category' && $details[$field] !== '' && !in_array($details[$field], $categories, true)) {
+                $error = 'Seleciona um escalão da lista.';
+                break;
+            }
             if ($field === 'birth_date' && $details[$field] !== '') {
                 $date = DateTimeImmutable::createFromFormat('!Y-m-d', $details[$field]);
                 if (!$date || $date->format('Y-m-d') !== $details[$field] || $details[$field] > $today) {
@@ -185,6 +194,13 @@ function saveAthletePhoto(int $id, array $upload): void
                 <label><?= escape($label) ?>
                     <?php if ($field === 'birth_date'): ?>
                         <input type="date" name="birth_date" value="<?= escape($details[$field] ?? '') ?>" max="<?= $today ?>">
+                    <?php elseif ($field === 'category'): ?>
+                        <select name="category">
+                            <option value="">Selecionar escalão</option>
+                            <?php foreach ($categories as $category): ?>
+                                <option value="<?= escape($category) ?>" <?= ($details['category'] ?? '') === $category ? 'selected' : '' ?>><?= escape($category) ?></option>
+                            <?php endforeach; ?>
+                        </select>
                     <?php else: ?>
                         <input name="<?= $field ?>" value="<?= escape($details[$field] ?? '') ?>" maxlength="255"
                             <?= in_array($field, ['phone', 'guardian_phone'], true) ? 'type="tel"' : '' ?>>
