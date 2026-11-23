@@ -12,6 +12,7 @@
                 <?php if ($isAdmin): ?>
                     <li><a href="?action=athletes"<?= $route === 'athletes' ? ' aria-current="page"' : '' ?>>Gestão de atletas</a></li>
                     <li><a href="?action=users"<?= $route === 'users' ? ' aria-current="page"' : '' ?>>Gestão de utilizadores</a></li>
+                    <li><a href="?action=activity"<?= $route === 'activity' ? ' aria-current="page"' : '' ?>>Registo de atividade</a></li>
                 <?php endif; ?>
             </ul>
             <form method="post" action="?action=logout">

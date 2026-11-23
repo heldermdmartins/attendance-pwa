@@ -8,6 +8,8 @@
 !/app/bootstrap.php
 !/app/users.php
 !/app/navigation.php
+!/app/activity-log.php
+!/app/activity.php
 !/app/athlete-profile.php
 !/app/athletes.php
 !/app/training-schedule.php
@@ -36,3 +38,4 @@
 !/public/assets/login-background-mobile.webp
 !/database/add-training-cancellations.sql
 !/database/add-club-admin-position.sql
+!/database/add-activity-log.sql

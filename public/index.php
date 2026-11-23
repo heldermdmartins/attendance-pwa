@@ -4,6 +4,7 @@ declare(strict_types=1);
 require __DIR__ . '/../app/bootstrap.php';
 require __DIR__ . '/../app/athlete-profile.php';
 require __DIR__ . '/../app/training-schedule.php';
+require __DIR__ . '/../app/activity-log.php';
 
 function escape(string $value): string
 {
@@ -53,14 +54,14 @@ try {
     $coach = $_SESSION['coach'] ?? null;
     $isAdmin = false;
     if ($coach !== null) {
-        $query = db()->prepare('SELECT role FROM coaches WHERE id = ? AND active = 1');
+        $query = db()->prepare('SELECT role, name, username FROM coaches WHERE id = ? AND active = 1');
         $query->execute([$coach]);
-        $role = $query->fetchColumn();
-        if (!$role) {
+        $currentAccount = $query->fetch(PDO::FETCH_ASSOC);
+        if (!$currentAccount) {
             $coach = null;
             unset($_SESSION['coach'], $_SESSION['seen']);
         } else {
-            $isAdmin = $role === 'admin';
+            $isAdmin = $currentAccount['role'] === 'admin';
             $_SESSION['seen'] = time();
         }
     }
@@ -69,7 +70,7 @@ try {
     $todayDate = new DateTimeImmutable('today');
     $today = $todayDate->format('Y-m-d');
     $error = '';
-    if (in_array($route, ['users', 'athletes'], true)) {
+    if (in_array($route, ['users', 'athletes', 'activity'], true)) {
         if ($coach === null) {
             redirectHome();
         }
@@ -151,11 +152,20 @@ try {
             respond(409, ['error' => 'O treino foi cancelado. Atualiza a página para veres o motivo.']);
         }
         $present = (int) $data['present'];
+        $previous = $pdo->prepare('SELECT present FROM attendance WHERE athlete_id = ? AND training_date = ?');
+        $previous->execute([$data['athlete'], $today]);
+        $previousPresent = $previous->fetchColumn();
+        if ($previousPresent !== false && (int) $previousPresent === $present) {
+            $pdo->commit();
+            respond(200, ['present' => $data['present']]);
+        }
         $query = $pdo->prepare(
             'INSERT INTO attendance (athlete_id, training_date, present, coach_id) VALUES (?, ?, ?, ?)
              ON DUPLICATE KEY UPDATE present = ?, coach_id = ?, updated_at = CURRENT_TIMESTAMP'
         );
         $query->execute([$data['athlete'], $today, $present, $coach, $present, $coach]);
+        recordActivity($pdo, $currentAccount['name'] ?: $currentAccount['username'],
+            $present ? 'attendance_marked' : 'attendance_unmarked');
         $pdo->commit();
         respond(200, ['present' => $data['present']]);
     }
@@ -210,13 +220,14 @@ try {
         } else {
             $username = is_string($_POST['username'] ?? null) ? trim($_POST['username']) : '';
             $password = is_string($_POST['password'] ?? null) ? $_POST['password'] : '';
-            $query = $pdo->prepare('SELECT id, password_hash FROM coaches WHERE username = ? AND active = 1');
+            $query = $pdo->prepare('SELECT id, name, username, password_hash FROM coaches WHERE username = ? AND active = 1');
             $query->execute([$username]);
             $account = $query->fetch(PDO::FETCH_ASSOC);
             // A fixed dummy hash makes unknown and existing usernames take similar time.
             $hash = $account['password_hash'] ?? '$2y$12$UNXb9XYBMdj0ZNnWyAFGYuM1.PPps3ed8eQqhBF3MRBFQ.OmTPdke';
             if (strlen($password) <= 72 && password_verify($password, $hash) && $account) {
                 $pdo->prepare('DELETE FROM login_limits WHERE address = ?')->execute([$address]);
+                recordActivity($pdo, $account['name'] ?: $account['username'], 'login');
                 session_regenerate_id(true);
                 $_SESSION = ['coach' => (int) $account['id'], 'seen' => time()];
                 redirectHome();
