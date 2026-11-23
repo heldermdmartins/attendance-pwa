@@ -1,3 +1,20 @@
+const menuToggle = document.querySelector('.app-menu-toggle');
+
+if (menuToggle) {
+    const menu = menuToggle.closest('nav');
+    menuToggle.hidden = false;
+    menuToggle.addEventListener('click', () => {
+        const open = menuToggle.getAttribute('aria-expanded') === 'true';
+        menuToggle.setAttribute('aria-expanded', String(!open));
+    });
+    menu.addEventListener('keydown', (event) => {
+        if (event.key !== 'Escape' || menuToggle.getAttribute('aria-expanded') !== 'true'
+            || menuToggle.offsetWidth === 0) return;
+        menuToggle.setAttribute('aria-expanded', 'false');
+        menuToggle.focus();
+    });
+}
+
 const roster = document.querySelector('#roster');
 
 if (roster) {

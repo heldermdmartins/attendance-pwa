@@ -179,7 +179,8 @@ function saveAthletePhoto(int $id, array $upload): void
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Gestão de atletas</title>
-    <link rel="stylesheet" href="assets/styles.css?v=14">
+    <link rel="stylesheet" href="assets/styles.css?v=15">
+    <script src="assets/app.js?v=2" defer></script>
 </head>
 <body>
 <?php require __DIR__ . '/navigation.php'; ?>

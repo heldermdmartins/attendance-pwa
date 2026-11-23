@@ -212,8 +212,8 @@ try {
     <title>Registo de presenças</title>
     <link rel="manifest" href="manifest.webmanifest?v=2">
     <link rel="apple-touch-icon" sizes="180x180" href="assets/sporting-icon-180.png">
-    <link rel="stylesheet" href="assets/styles.css?v=10">
-    <script src="assets/app.js" defer></script>
+    <link rel="stylesheet" href="assets/styles.css?v=15">
+    <script src="assets/app.js?v=2" defer></script>
 </head>
 <body<?= $coach === null ? ' class="login-page"' : '' ?>>
 <?php if ($coach !== null) require __DIR__ . '/../app/navigation.php'; ?>

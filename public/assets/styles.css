@@ -157,14 +157,16 @@ button { cursor: pointer; }
     background: var(--green);
 }
 .app-menu-inner {
+    width: min(100% - 2rem, 60rem);
+    margin: 0 auto;
+    padding: .5rem 0;
+}
+.app-menu-panel {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
     gap: .25rem .65rem;
-    width: min(100% - 2rem, 60rem);
-    margin: 0 auto;
-    padding: .5rem 0;
 }
 .app-menu-links {
     display: flex;
@@ -268,4 +270,21 @@ button { cursor: pointer; }
     height: 1rem;
     padding: 0;
     margin: 0;
+}
+
+
+.app-menu .app-menu-toggle { display: none; }
+
+@media (max-width: 42rem) {
+    .app-menu .app-menu-toggle:not([hidden]) {
+        display: inline-flex;
+        gap: .55rem;
+        border-color: #8aafa0;
+    }
+    .app-menu-toggle:not([hidden])[aria-expanded="false"] + .app-menu-panel { display: none; }
+    .app-menu-panel { display: block; }
+    .app-menu-toggle:not([hidden]) + .app-menu-panel { padding-top: .5rem; }
+    .app-menu-links { flex-direction: column; }
+    .app-menu-panel a { width: 100%; }
+    .app-menu-panel form { margin-top: .35rem; border-top: 1px solid #638d7d; }
 }
