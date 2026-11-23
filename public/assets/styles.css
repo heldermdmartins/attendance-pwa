@@ -235,4 +235,13 @@ button { cursor: pointer; }
     padding: .55rem .75rem;
     border-bottom: 1px solid #b6c6bc;
 }
-.athlete-directory a { padding-block: .45rem; }
+.athlete-directory a {
+    display: flex;
+    flex: 1 1 12rem;
+    align-items: center;
+    gap: .75rem;
+    min-width: 0;
+    padding-block: .25rem;
+    overflow-wrap: anywhere;
+}
+.athlete-directory-portrait { flex: 0 0 2.75rem; width: 2.75rem; height: 2.75rem; }

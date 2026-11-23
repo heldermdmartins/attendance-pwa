@@ -151,7 +151,7 @@ function saveAthletePhoto(int $id, array $upload): void
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Gestão de atletas</title>
-    <link rel="stylesheet" href="assets/styles.css?v=11">
+    <link rel="stylesheet" href="assets/styles.css?v=12">
 </head>
 <body>
 <?php require __DIR__ . '/navigation.php'; ?>
@@ -203,8 +203,19 @@ function saveAthletePhoto(int $id, array $upload): void
         <p><a class="primary user-add" href="?action=athletes&amp;view=new">Adicionar atleta</a></p>
         <ul class="athlete-directory">
             <?php foreach ($athletes as $athlete): ?>
-                <li><a href="?action=athletes&amp;id=<?= (int) $athlete['id'] ?>"><?= escape($athlete['name']) ?></a>
-                    <span><?= $athlete['active'] ? 'Ativo' : 'Inativo' ?></span></li>
+                <?php $athleteId = (int) $athlete['id']; ?>
+                <li>
+                    <a href="?action=athletes&amp;id=<?= $athleteId ?>">
+                        <span class="portrait athlete-directory-portrait" aria-hidden="true">
+                            <?= escape(athleteInitials($athlete['name'])) ?>
+                            <?php if (is_readable(athletePhotoPath($athleteId))): ?>
+                                <img src="?action=photo&amp;id=<?= $athleteId ?>" alt="" loading="lazy">
+                            <?php endif; ?>
+                        </span>
+                        <span><?= escape($athlete['name']) ?></span>
+                    </a>
+                    <span><?= $athlete['active'] ? 'Ativo' : 'Inativo' ?></span>
+                </li>
             <?php endforeach; ?>
         </ul>
     <?php endif; ?>
