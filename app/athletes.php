@@ -29,6 +29,12 @@ $storedCategory = $details['category'] ?? '';
 if ($storedCategory !== '' && !in_array($storedCategory, $categories, true)) {
     $categories[] = $storedCategory;
 }
+$currentYear = (int) substr($today, 0, 4);
+$seasons = array_map('strval', range($currentYear, $currentYear + 20));
+$storedSeason = $details['season'] ?? '';
+if ($storedSeason !== '' && !in_array($storedSeason, $seasons, true)) {
+    array_unshift($seasons, $storedSeason);
+}
 $error = '';
 if ($method === 'POST') {
     if (!is_string($_POST['csrf'] ?? null) || !hash_equals($csrf, $_POST['csrf'])) {
@@ -41,7 +47,9 @@ if ($method === 'POST') {
         $active = ($_POST['active'] ?? '') === '1';
         $details = [];
         foreach (ATHLETE_FIELDS as $field => $label) {
-            $value = $_POST[$field] ?? '';
+            $value = $field === 'medical_exam'
+                ? (($_POST[$field] ?? '') === '1' ? 'Sim' : 'Não')
+                : ($_POST[$field] ?? '');
             if (!is_string($value) || !mb_check_encoding($value, 'UTF-8') || mb_strlen($value) > 255) {
                 $error = "Verifica o campo «$label».";
                 break;
@@ -49,6 +57,10 @@ if ($method === 'POST') {
             $details[$field] = trim($value);
             if ($field === 'category' && $details[$field] !== '' && !in_array($details[$field], $categories, true)) {
                 $error = 'Seleciona um escalão da lista.';
+                break;
+            }
+            if ($field === 'season' && $details[$field] !== '' && !in_array($details[$field], $seasons, true)) {
+                $error = 'Seleciona uma época da lista.';
                 break;
             }
             if ($field === 'birth_date' && $details[$field] !== '') {
@@ -191,6 +203,13 @@ function saveAthletePhoto(int $id, array $upload): void
             <input type="hidden" name="csrf" value="<?= $csrf ?>">
             <label>Nome <input name="name" value="<?= escape($name) ?>" maxlength="150" required></label>
             <?php foreach (ATHLETE_FIELDS as $field => $label): ?>
+                <?php if ($field === 'medical_exam'): ?>
+                    <label class="check">
+                        <input type="checkbox" name="medical_exam" value="1" <?= mb_strtolower($details['medical_exam'] ?? '', 'UTF-8') === 'sim' ? 'checked' : '' ?>>
+                        <?= escape($label) ?>
+                    </label>
+                    <?php continue; ?>
+                <?php endif; ?>
                 <label><?= escape($label) ?>
                     <?php if ($field === 'birth_date'): ?>
                         <input type="date" name="birth_date" value="<?= escape($details[$field] ?? '') ?>" max="<?= $today ?>">
@@ -199,6 +218,13 @@ function saveAthletePhoto(int $id, array $upload): void
                             <option value="">Selecionar escalão</option>
                             <?php foreach ($categories as $category): ?>
                                 <option value="<?= escape($category) ?>" <?= ($details['category'] ?? '') === $category ? 'selected' : '' ?>><?= escape($category) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    <?php elseif ($field === 'season'): ?>
+                        <select name="season">
+                            <option value="">Selecionar época</option>
+                            <?php foreach ($seasons as $season): ?>
+                                <option value="<?= escape($season) ?>" <?= ($details['season'] ?? '') === $season ? 'selected' : '' ?>><?= escape($season) ?></option>
                             <?php endforeach; ?>
                         </select>
                     <?php else: ?>
