@@ -179,7 +179,7 @@ function saveAthletePhoto(int $id, array $upload): void
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Gestão de atletas</title>
-    <link rel="stylesheet" href="assets/styles.css?v=13">
+    <link rel="stylesheet" href="assets/styles.css?v=14">
 </head>
 <body>
 <?php require __DIR__ . '/navigation.php'; ?>
@@ -214,14 +214,19 @@ function saveAthletePhoto(int $id, array $upload): void
                     <?php if ($field === 'birth_date'): ?>
                         <input type="date" name="birth_date" value="<?= escape($details[$field] ?? '') ?>" max="<?= $today ?>">
                     <?php elseif ($field === 'category'): ?>
-                        <select name="category">
-                            <option value="">Selecionar escalão</option>
-                            <?php foreach ($categories as $category): ?>
-                                <option value="<?= escape($category) ?>" <?= ($details['category'] ?? '') === $category ? 'selected' : '' ?>><?= escape($category) ?></option>
-                            <?php endforeach; ?>
-                        </select>
+                        <span class="athlete-select">
+                            <select name="category">
+                                <option value="">Selecionar escalão</option>
+                                <?php foreach ($categories as $category): ?>
+                                    <option value="<?= escape($category) ?>" <?= ($details['category'] ?? '') === $category ? 'selected' : '' ?>><?= escape($category) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+                                <path d="m6 9 6 6 6-6"/>
+                            </svg>
+                        </span>
                     <?php elseif ($field === 'season'): ?>
-                        <span class="season-picker">
+                        <span class="athlete-select">
                             <select name="season">
                                 <option value="">Selecionar época</option>
                                 <?php foreach ($seasons as $season): ?>
