@@ -207,3 +207,19 @@ button { cursor: pointer; }
     padding-bottom: 0;
     color: #d9f0df;
 }
+
+.portrait { position: relative; display: grid; place-items: center; font-weight: 700; color: #234a3b; }
+.portrait img { position: absolute; inset: 0; background: #e6ece7; }
+.athlete-photo-preview { width: 8rem; height: 8rem; object-fit: cover; border-radius: .65rem; }
+.remove-athlete-photo { margin-top: .75rem; }
+.athlete-directory { list-style: none; margin: 0; padding: 0; }
+.athlete-directory li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: .25rem 1rem;
+    padding: .55rem .75rem;
+    border-bottom: 1px solid #b6c6bc;
+}
+.athlete-directory a { padding-block: .45rem; }

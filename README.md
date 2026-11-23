@@ -36,3 +36,7 @@ A base de dados, os retratos e o ficheiro `.env` ficam no servidor e fora da rai
 Em instalações existentes, importe primeiro `database/add-user-management.sql` com uma conta de manutenção com permissão para alterar a tabela. As contas atuais mantêm o nome de utilizador, a palavra-passe, as presenças e o acesso à grelha. Recebem inicialmente o perfil Utilizador e a posição Treinador.
 
 Crie uma conta separada para administração repetindo a leitura silenciosa de palavra-passe descrita acima e usando `php bin/manage.php admin UTILIZADOR`. Para uma conta ativa existente, use `php bin/manage.php promote-admin UTILIZADOR`. Depois de entrar, abra **Gerir utilizadores** para criar, editar ou desativar contas. A posição Treinador ou Delegado descreve a função no clube. Ambos os perfis acedem à grelha de presenças. Os contactos são visíveis na área reservada aos administradores.
+
+## Gestão de atletas
+
+Em instalações existentes, aplique `database/add-athlete-details.sql` antes de atualizar a aplicação. A migração mantém os IDs dos atletas e as presenças existentes. Na área privada, um administrador pode criar atletas, editar os dados e gerir retratos. O carregamento aceita JPEG, PNG e WebP e requer a extensão GD com suporte WebP. O ficheiro é convertido no servidor e guardado em `storage/photos/`, fora da raiz pública.

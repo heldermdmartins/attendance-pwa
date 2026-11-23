@@ -8,6 +8,8 @@
 !/app/bootstrap.php
 !/app/users.php
 !/app/navigation.php
+!/app/athlete-profile.php
+!/app/athletes.php
 !/bin/
 /bin/*
 !/bin/manage.php
@@ -15,6 +17,7 @@
 /database/*
 !/database/schema.sql
 !/database/add-user-management.sql
+!/database/add-athlete-details.sql
 !/public/
 /public/*
 !/public/index.php

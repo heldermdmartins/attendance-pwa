@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require __DIR__ . '/../app/bootstrap.php';
+require __DIR__ . '/../app/athlete-profile.php';
 
 function escape(string $value): string
 {
@@ -66,7 +67,7 @@ try {
     $method = $_SERVER['REQUEST_METHOD'];
     $today = date('Y-m-d');
     $error = '';
-    if ($route === 'users') {
+    if (in_array($route, ['users', 'athletes'], true)) {
         if ($coach === null) {
             redirectHome();
         }
@@ -74,7 +75,7 @@ try {
             http_response_code(403);
             exit('Área reservada a administradores.');
         }
-        require __DIR__ . '/../app/users.php';
+        require __DIR__ . '/../app/' . $route . '.php';
         exit;
     }
 
@@ -121,9 +122,9 @@ try {
             http_response_code(404);
             exit;
         }
-        $query = db()->prepare('SELECT id FROM athletes WHERE id = ? AND active = 1');
-        $query->execute([$id]);
-        $path = ROOT . "/storage/photos/$id.webp";
+        $query = db()->prepare('SELECT id FROM athletes WHERE id = ? AND (active = 1 OR ? = 1)');
+        $query->execute([$id, (int) $isAdmin]);
+        $path = athletePhotoPath($id);
         if (!$query->fetchColumn() || !is_file($path) || !is_readable($path)) {
             http_response_code(404);
             exit;
@@ -211,7 +212,7 @@ try {
     <title>Registo de presenças</title>
     <link rel="manifest" href="manifest.webmanifest?v=2">
     <link rel="apple-touch-icon" sizes="180x180" href="assets/sporting-icon-180.png">
-    <link rel="stylesheet" href="assets/styles.css?v=9">
+    <link rel="stylesheet" href="assets/styles.css?v=10">
     <script src="assets/app.js" defer></script>
 </head>
 <body<?= $coach === null ? ' class="login-page"' : '' ?>>
@@ -242,7 +243,8 @@ try {
                 <li>
                     <button type="button" class="athlete" data-id="<?= $id ?>" aria-pressed="<?= $present ? 'true' : 'false' ?>">
                         <span class="portrait" aria-hidden="true">
-                            <?php if (is_file(ROOT . "/storage/photos/$id.webp")): ?>
+                            <?= escape(athleteInitials($athlete['name'])) ?>
+                            <?php if (is_readable(athletePhotoPath($id))): ?>
                                 <img src="?action=photo&amp;id=<?= $id ?>" alt="" loading="lazy">
                             <?php endif; ?>
                         </span>

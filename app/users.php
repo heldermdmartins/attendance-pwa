@@ -162,7 +162,7 @@ $accounts = $pdo->query('SELECT id, username, name, email, phone, role, club_pos
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Gestão de utilizadores</title>
-    <link rel="stylesheet" href="assets/styles.css?v=9">
+    <link rel="stylesheet" href="assets/styles.css?v=10">
 </head>
 <body>
 <?php require __DIR__ . '/navigation.php'; ?>
