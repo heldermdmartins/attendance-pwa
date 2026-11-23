@@ -6,12 +6,14 @@
 !/app/
 /app/*
 !/app/bootstrap.php
+!/app/users.php
 !/bin/
 /bin/*
 !/bin/manage.php
 !/database/
 /database/*
 !/database/schema.sql
+!/database/add-user-management.sql
 !/public/
 /public/*
 !/public/index.php

@@ -1,0 +1,6 @@
+ALTER TABLE coaches
+  ADD COLUMN name VARCHAR(150) NOT NULL DEFAULT '',
+  ADD COLUMN email VARCHAR(254) NOT NULL DEFAULT '',
+  ADD COLUMN phone VARCHAR(32) NOT NULL DEFAULT '',
+  ADD COLUMN role ENUM('admin', 'user') NOT NULL DEFAULT 'user',
+  ADD COLUMN club_position ENUM('coach', 'delegate') NOT NULL DEFAULT 'coach';

@@ -30,3 +30,9 @@ Use uma base de dados de teste vazia, importe o esquema e preencha um `.env` loc
 ## Dados privados
 
 A base de dados, os retratos e o ficheiro `.env` ficam no servidor e fora da raiz pública. O Git aceita apenas os caminhos de código indicados em `.gitignore`. Mantenha exportações, cópias de segurança e credenciais fora do repositório. As fotografias são servidas por PHP depois de validar a sessão. A PWA não guarda a lista, as fotos nem o estado das presenças em cache e precisa de ligação para gravar. Para revogar uma conta, defina `active=0` na tabela `coaches`.
+
+## Gestão de utilizadores
+
+Em instalações existentes, importe primeiro `database/add-user-management.sql` com uma conta de manutenção com permissão para alterar a tabela. As contas atuais mantêm o nome de utilizador, a palavra-passe, as presenças e o acesso à grelha. Recebem inicialmente o perfil Utilizador e a posição Treinador.
+
+Crie uma conta separada para administração repetindo a leitura silenciosa de palavra-passe descrita acima e usando `php bin/manage.php admin UTILIZADOR`. Para uma conta ativa existente, use `php bin/manage.php promote-admin UTILIZADOR`. Depois de entrar, abra **Gerir utilizadores** para criar, editar ou desativar contas. A posição Treinador ou Delegado descreve a função no clube. Ambos os perfis acedem à grelha de presenças. Os contactos são visíveis na área reservada aos administradores.

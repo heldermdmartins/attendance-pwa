@@ -49,13 +49,16 @@ try {
 
     $csrf = $_SESSION['csrf'] ??= bin2hex(random_bytes(32));
     $coach = $_SESSION['coach'] ?? null;
+    $isAdmin = false;
     if ($coach !== null) {
-        $query = db()->prepare('SELECT id FROM coaches WHERE id = ? AND active = 1');
+        $query = db()->prepare('SELECT role FROM coaches WHERE id = ? AND active = 1');
         $query->execute([$coach]);
-        if (!$query->fetchColumn()) {
+        $role = $query->fetchColumn();
+        if (!$role) {
             $coach = null;
             unset($_SESSION['coach'], $_SESSION['seen']);
         } else {
+            $isAdmin = $role === 'admin';
             $_SESSION['seen'] = time();
         }
     }
@@ -63,6 +66,18 @@ try {
     $method = $_SERVER['REQUEST_METHOD'];
     $today = date('Y-m-d');
     $error = '';
+    if ($route === 'users') {
+        if ($coach === null) {
+            redirectHome();
+        }
+        if (!$isAdmin) {
+            http_response_code(403);
+            exit('Área reservada a administradores.');
+        }
+        require __DIR__ . '/../app/users.php';
+        exit;
+    }
+
     if ($route === 'attendance') {
         if ($method !== 'POST') {
             header('Allow: POST');
@@ -204,10 +219,13 @@ try {
     <header>
         <h1>Registo de presenças</h1>
         <?php if ($coach !== null): ?>
+            <div class="account-actions">
+            <?php if ($isAdmin): ?><a href="?action=users">Gerir utilizadores</a><?php endif; ?>
             <form method="post" action="?action=logout">
                 <input type="hidden" name="csrf" value="<?= $csrf ?>">
                 <button class="secondary">Sair</button>
             </form>
+            </div>
         <?php endif; ?>
     </header>
     <?php if ($coach === null): ?>

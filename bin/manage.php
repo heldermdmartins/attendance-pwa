@@ -9,13 +9,20 @@ require __DIR__ . '/../app/bootstrap.php';
 
 $command = $argv[1] ?? '';
 $value = trim($argv[2] ?? '');
-if ($argc !== 3 || !in_array($command, ['coach', 'athlete'], true) || $value === '') {
-    fwrite(STDERR, "Utilização: php bin/manage.php coach UTILIZADOR | athlete NOME\n");
+if ($argc !== 3 || !in_array($command, ['coach', 'admin', 'athlete', 'promote-admin'], true) || $value === '') {
+    fwrite(STDERR, "Utilização: php bin/manage.php coach UTILIZADOR | admin UTILIZADOR | athlete NOME | promote-admin UTILIZADOR\n");
     exit(1);
 }
 
 try {
-    if ($command === 'coach') {
+    if ($command === 'promote-admin') {
+        $statement = db()->prepare("UPDATE coaches SET role='admin' WHERE username=? AND active=1 AND role='user'");
+        $statement->execute([$value]);
+        if ($statement->rowCount() !== 1) {
+            throw new InvalidArgumentException('Indique uma conta ativa com o perfil Utilizador.');
+        }
+        echo "Perfil Administrador atribuído.\n";
+    } elseif (in_array($command, ['coach', 'admin'], true)) {
         if (!preg_match('/^[a-zA-Z0-9_.-]{1,64}$/D', $value)) {
             throw new InvalidArgumentException('Utilizador inválido.');
         }
@@ -24,8 +31,9 @@ try {
         if (strlen($password) < 12 || strlen($password) > 72 || str_contains($password, "\0")) {
             throw new InvalidArgumentException('A palavra-passe deve ter entre 12 e 72 bytes.');
         }
-        $statement = db()->prepare('INSERT INTO coaches (username, password_hash) VALUES (?, ?)');
-        $statement->execute([$value, password_hash($password, PASSWORD_BCRYPT)]);
+        $role = $command === 'admin' ? 'admin' : 'user';
+        $statement = db()->prepare('INSERT INTO coaches (username, password_hash, role) VALUES (?, ?, ?)');
+        $statement->execute([$value, password_hash($password, PASSWORD_BCRYPT), $role]);
         echo "Conta criada.\n";
     } else {
         if (!mb_check_encoding($value, 'UTF-8') || mb_strlen($value) > 150) {
