@@ -301,7 +301,7 @@ try {
     <title>Registo de presenças</title>
     <link rel="manifest" href="manifest.webmanifest?v=2">
     <link rel="apple-touch-icon" sizes="180x180" href="assets/sporting-icon-180.png">
-    <link rel="stylesheet" href="assets/styles.css?v=21">
+    <link rel="stylesheet" href="assets/styles.css?v=22">
     <script src="assets/app.js?v=3" defer></script>
 </head>
 <body<?= $coach === null ? ' class="login-page"' : '' ?>>
@@ -322,14 +322,19 @@ try {
         <section class="training-controls" aria-label="Calendário de treinos">
             <form method="get">
                 <label>Treino
-                    <select name="date">
-                        <?php if ($history): ?>
-                            <option value="<?= $selected ?>" selected><?= $selectedDate->format('d/m/Y') ?> (histórico)</option>
-                        <?php endif; ?>
-                        <?php foreach ($upcoming as $date => $label): ?>
-                            <option value="<?= $date ?>" <?= $date === $selected ? 'selected' : '' ?>><?= escape($label) ?><?= $date === $today ? ' (hoje)' : '' ?></option>
-                        <?php endforeach; ?>
-                    </select>
+                    <span class="form-select">
+                        <select name="date">
+                            <?php if ($history): ?>
+                                <option value="<?= $selected ?>" selected><?= $selectedDate->format('d/m/Y') ?> (histórico)</option>
+                            <?php endif; ?>
+                            <?php foreach ($upcoming as $date => $label): ?>
+                                <option value="<?= $date ?>" <?= $date === $selected ? 'selected' : '' ?>><?= escape($label) ?><?= $date === $today ? ' (hoje)' : '' ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+                            <path d="m6 9 6 6 6-6"/>
+                        </svg>
+                    </span>
                 </label>
                 <button class="secondary">Ver treino</button>
             </form>
