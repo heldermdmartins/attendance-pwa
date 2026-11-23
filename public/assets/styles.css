@@ -102,3 +102,52 @@ button { cursor: pointer; }
 .user-form select { font: inherit; min-height: 44px; padding: .55rem .85rem; border: 1px solid #76877d; border-radius: .55rem; }
 .user-form .check { display: flex; align-items: center; gap: .5rem; }
 .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+
+.users-mobile-label { display: none; }
+
+@media (max-width: 54rem) {
+    .users-table-scroll { overflow: visible; border: 0; border-radius: 0; }
+    .users-table, .users-table tbody { display: block; background: transparent; }
+    .users-table thead {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+    }
+    .users-table tbody tr {
+        display: grid;
+        gap: .45rem;
+        margin-bottom: .75rem;
+        padding: .85rem;
+        border: 1px solid #b6c6bc;
+        border-radius: .65rem;
+        background: white;
+    }
+    .users-table th, .users-table td {
+        display: block;
+        min-width: 0;
+        padding: 0;
+        overflow-wrap: anywhere;
+    }
+    .users-table .users-mobile-label {
+        display: inline-block;
+        margin-right: .5rem;
+        font-weight: 600;
+    }
+    .users-table .account-actions {
+        flex-wrap: wrap;
+        gap: .25rem .65rem;
+        margin-top: .25rem;
+        border-top: 1px solid #d6e1d9;
+        padding-top: .25rem;
+    }
+    .users-table .account-actions a {
+        display: inline-flex;
+        align-items: center;
+        min-height: 44px;
+        padding-inline: .25rem;
+    }
+}

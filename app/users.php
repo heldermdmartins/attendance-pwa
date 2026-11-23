@@ -162,7 +162,7 @@ $accounts = $pdo->query('SELECT id, username, name, email, phone, role, club_pos
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Gestão de utilizadores</title>
-    <link rel="stylesheet" href="assets/styles.css?v=6">
+    <link rel="stylesheet" href="assets/styles.css?v=7">
 </head>
 <body>
 <main>
@@ -186,33 +186,33 @@ $accounts = $pdo->query('SELECT id, username, name, email, phone, role, club_pos
     <?php elseif (!$adding && !$editing): ?>
     <p><a class="primary user-add" href="?action=users&amp;view=new#user-form">Adicionar utilizador</a></p>
     <div class="users-table-scroll" role="region" aria-label="Lista de utilizadores" tabindex="0">
-        <table class="users-table" aria-label="Utilizadores">
-            <thead>
-                <tr>
-                    <th scope="col">Nome e utilizador</th>
-                    <th scope="col">Contactos</th>
-                    <th scope="col">Perfil</th>
-                    <th scope="col">Posição no clube</th>
-                    <th scope="col">Estado</th>
-                    <th scope="col">Ações</th>
+        <table class="users-table" role="table" aria-label="Utilizadores">
+            <thead role="rowgroup">
+                <tr role="row">
+                    <th scope="col" role="columnheader">Nome e utilizador</th>
+                    <th scope="col" role="columnheader">Contactos</th>
+                    <th scope="col" role="columnheader">Perfil</th>
+                    <th scope="col" role="columnheader">Posição no clube</th>
+                    <th scope="col" role="columnheader">Estado</th>
+                    <th scope="col" role="columnheader">Ações</th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody role="rowgroup">
                 <?php foreach ($accounts as $person): ?>
                 <?php $id = (int) $person['id']; $username = escape($person['username']); ?>
-                <tr>
-                    <th scope="row">
+                <tr role="row">
+                    <th scope="row" role="rowheader">
                         <?= escape($person['name'] ?: $person['username']) ?>
                         <?php if ($person['name'] !== ''): ?><small><?= $username ?></small><?php endif; ?>
                     </th>
-                    <td>
+                    <td role="cell">
                         <?= escape($person['email'] ?: '—') ?>
                         <?php if ($person['phone'] !== ''): ?><small><?= escape($person['phone']) ?></small><?php endif; ?>
                     </td>
-                    <td><?= $roles[$person['role']] ?></td>
-                    <td><?= $positions[$person['club_position']] ?></td>
-                    <td><?= $person['active'] ? 'Ativa' : 'Inativa' ?></td>
-                    <td>
+                    <td role="cell"><span class="users-mobile-label" aria-hidden="true">Perfil</span><?= $roles[$person['role']] ?></td>
+                    <td role="cell"><span class="users-mobile-label" aria-hidden="true">Posição</span><?= $positions[$person['club_position']] ?></td>
+                    <td role="cell"><span class="users-mobile-label" aria-hidden="true">Estado</span><?= $person['active'] ? 'Ativa' : 'Inativa' ?></td>
+                    <td role="cell">
                         <div class="account-actions">
                             <a href="?action=users&amp;id=<?= $id ?>#user-form">Editar<span class="visually-hidden"> <?= $username ?></span></a>
                             <?php if ($id !== $coach): ?>
