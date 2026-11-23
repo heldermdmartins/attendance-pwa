@@ -1,0 +1,25 @@
+# Allowlist for this public repository.
+/*
+!/.gitignore
+!/.env.example
+!/README.md
+!/app/
+/app/*
+!/app/bootstrap.php
+!/bin/
+/bin/*
+!/bin/manage.php
+!/database/
+/database/*
+!/database/schema.sql
+!/public/
+/public/*
+!/public/index.php
+!/public/manifest.webmanifest
+!/public/sw.js
+!/public/assets/
+/public/assets/*
+!/public/assets/app.js
+!/public/assets/styles.css
+!/public/assets/icon-192.png
+!/public/assets/icon-512.png
