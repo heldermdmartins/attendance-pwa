@@ -81,6 +81,35 @@ try {
         exit;
     }
 
+    if ($route === 'training-status' && $method === 'POST') {
+        if (!$isAdmin || !is_string($_POST['csrf'] ?? null) || !hash_equals($csrf, $_POST['csrf'])) {
+            http_response_code(403);
+            exit('Ação reservada a administradores.');
+        }
+
+        $date = $_POST['date'] ?? '';
+        if (!is_string($date) || !isset(upcomingTrainings($todayDate)[$date])) {
+            http_response_code(422);
+            exit('Escolhe um treino de hoje ou da lista de próximos treinos.');
+        }
+        $cancelled = ($_POST['cancelled'] ?? '') === '1';
+        $reason = is_string($_POST['reason'] ?? null) ? trim($_POST['reason']) : '';
+        if ($cancelled && ($reason === '' || !mb_check_encoding($reason, 'UTF-8') || mb_strlen($reason) > 500)) {
+            $_SESSION['training_error'] = 'Indica um motivo de cancelamento com até 500 caracteres.';
+            $_SESSION['training_cancel_draft'] = $date;
+        } else {
+            $statement = db()->prepare(
+                'INSERT INTO training_status (training_date, cancellation_reason) VALUES (?, ?)
+                 ON DUPLICATE KEY UPDATE cancellation_reason = ?'
+            );
+            $reason = $cancelled ? $reason : null;
+            $statement->execute([$date, $reason, $reason]);
+            $_SESSION['training_message'] = $cancelled ? 'Treino cancelado.' : 'Treino reativado.';
+        }
+        header('Location: ./?date=' . $date, true, 303);
+        exit;
+    }
+
     if ($route === 'attendance') {
         if ($method !== 'POST') {
             header('Allow: POST');
@@ -108,12 +137,26 @@ try {
         if (!$query->fetchColumn()) {
             respond(404, ['error' => 'Atleta indisponível.']);
         }
+        $pdo = db();
+        $pdo->beginTransaction();
+        // Serialize cancellation and attendance writes for the selected day.
+        $query = $pdo->prepare(
+            'INSERT INTO training_status (training_date) VALUES (?) ON DUPLICATE KEY UPDATE training_date = training_date'
+        );
+        $query->execute([$today]);
+        $query = $pdo->prepare('SELECT cancellation_reason FROM training_status WHERE training_date = ? FOR UPDATE');
+        $query->execute([$today]);
+        if ($query->fetchColumn() !== null) {
+            $pdo->rollBack();
+            respond(409, ['error' => 'O treino foi cancelado. Atualiza a página para veres o motivo.']);
+        }
         $present = (int) $data['present'];
-        $query = db()->prepare(
+        $query = $pdo->prepare(
             'INSERT INTO attendance (athlete_id, training_date, present, coach_id) VALUES (?, ?, ?, ?)
              ON DUPLICATE KEY UPDATE present = ?, coach_id = ?, updated_at = CURRENT_TIMESTAMP'
         );
         $query->execute([$data['athlete'], $today, $present, $coach, $present, $coach]);
+        $pdo->commit();
         respond(200, ['present' => $data['present']]);
     }
 
@@ -203,9 +246,18 @@ try {
         $selectedDate = new DateTimeImmutable($selected);
         $training = trainingSchedule($selectedDate);
         $history = $selected < $today;
-        $canMark = $selected === $today && $training !== null;
-        if ($history || $canMark) {
-            $query = db()->prepare($history
+        $status = db()->prepare('SELECT cancellation_reason FROM training_status WHERE training_date = ?');
+        $status->execute([$selected]);
+        $cancellationReason = $status->fetchColumn();
+        $cancelled = is_string($cancellationReason);
+        $canMark = !$cancelled && $selected === $today && $training !== null;
+        $readOnlyRecords = $history || $cancelled;
+        $trainingError = $_SESSION['training_error'] ?? '';
+        $trainingMessage = $_SESSION['training_message'] ?? '';
+        $showCancellationForm = $cancelled || ($_SESSION['training_cancel_draft'] ?? '') === $selected;
+        unset($_SESSION['training_error'], $_SESSION['training_message'], $_SESSION['training_cancel_draft']);
+        if ($readOnlyRecords || $canMark) {
+            $query = db()->prepare($readOnlyRecords
                 ? 'SELECT a.id, a.name, r.present FROM attendance r
                    INNER JOIN athletes a ON a.id = r.athlete_id
                    WHERE r.training_date = ? ORDER BY a.name, a.id'
@@ -218,6 +270,9 @@ try {
     }
     session_write_close();
 } catch (Throwable $exception) {
+    if (isset($pdo) && $pdo->inTransaction()) {
+        $pdo->rollBack();
+    }
     error_log('Attendance request failed: ' . $exception::class . ' (' . $exception->getCode() . ')');
     if ($route === 'attendance') {
         respond(503, ['error' => 'Não foi possível confirmar a gravação.']);
@@ -235,8 +290,8 @@ try {
     <title>Registo de presenças</title>
     <link rel="manifest" href="manifest.webmanifest?v=2">
     <link rel="apple-touch-icon" sizes="180x180" href="assets/sporting-icon-180.png">
-    <link rel="stylesheet" href="assets/styles.css?v=17">
-    <script src="assets/app.js?v=2" defer></script>
+    <link rel="stylesheet" href="assets/styles.css?v=18">
+    <script src="assets/app.js?v=3" defer></script>
 </head>
 <body<?= $coach === null ? ' class="login-page"' : '' ?>>
 <?php if ($coach !== null) require __DIR__ . '/../app/navigation.php'; ?>
@@ -286,18 +341,37 @@ try {
             </div>
             <?php if ($canMark): ?>
                 <strong id="count"><?= array_sum(array_column($athletes, 'present')) ?> / <?= count($athletes) ?> presentes</strong>
-            <?php elseif ($history): ?>
+            <?php elseif ($readOnlyRecords && $athletes): ?>
                 <?php $presentCount = array_sum(array_column($athletes, 'present')); ?>
                 <strong><?= $presentCount ?> <?= $presentCount === 1 ? 'presente' : 'presentes' ?></strong>
             <?php endif; ?>
         </div>
+        <?php if ($cancelled): ?>
+            <p class="training-cancelled"><strong>Treino cancelado.</strong> <?= escape($cancellationReason) ?></p>
+        <?php endif; ?>
+        <?php if ($trainingMessage !== ''): ?><p role="status"><?= escape($trainingMessage) ?></p><?php endif; ?>
+        <?php if ($trainingError !== ''): ?><p class="error" role="alert"><?= escape($trainingError) ?></p><?php endif; ?>
+        <?php if ($isAdmin && !$history): ?>
+            <form class="training-cancellation" id="training-cancellation" method="post" action="?action=training-status">
+                <input type="hidden" name="csrf" value="<?= $csrf ?>">
+                <input type="hidden" name="date" value="<?= $selected ?>">
+                <label class="check">
+                    <input type="checkbox" name="cancelled" value="1" aria-controls="training-reason" <?= $showCancellationForm ? 'checked' : '' ?>>
+                    Cancelar treino
+                </label>
+                <label id="training-reason" for="cancellation-reason">Motivo do cancelamento
+                    <textarea id="cancellation-reason" name="reason" maxlength="500" rows="3"><?= $cancelled ? escape($cancellationReason) : '' ?></textarea>
+                </label>
+                <button class="secondary">Guardar estado do treino</button>
+            </form>
+        <?php endif; ?>
         <?php if ($canMark): ?>
             <p class="feedback" id="feedback" role="status" aria-atomic="true"></p>
             <noscript><p>Ative o JavaScript para registar presenças.</p></noscript>
             <?php if (!$athletes): ?><p>Ainda não há atletas ativos.</p><?php endif; ?>
         <?php elseif ($history): ?>
             <p><?= $athletes ? 'Histórico de marcações' : 'Sem marcações nesta data.' ?></p>
-        <?php else: ?>
+        <?php elseif (!$cancelled): ?>
             <p>As marcações abrem no dia do treino.</p>
         <?php endif; ?>
         <?php if ($athletes): ?>
@@ -318,7 +392,7 @@ try {
                         </span>
                         <span class="name" id="athlete-<?= $id ?>"><?= escape($athlete['name']) ?></span>
                         <span class="state"<?= $canMark ? ' aria-hidden="true"' : '' ?>>
-                            <?= $present ? '✓ Presente' : ($history ? 'Desmarcada' : 'Por marcar') ?>
+                            <?= $present ? '✓ Presente' : ($readOnlyRecords ? 'Desmarcada' : 'Por marcar') ?>
                         </span>
                     <?= $canMark ? '</button>' : '</div>' ?>
                 </li>

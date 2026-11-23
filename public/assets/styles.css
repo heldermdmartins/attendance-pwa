@@ -317,3 +317,16 @@ button { cursor: pointer; }
 .training-meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: .2rem .6rem; }
 .training-meta time, .training-meta span { white-space: nowrap; }
 .training-meta span::before { content: "·"; margin-inline-end: .6rem; }
+
+.training-cancellation { display: grid; gap: .55rem; max-width: 32rem; margin: 1rem 0; }
+.training-cancellation .check { display: flex; align-items: center; gap: .5rem; }
+.training-cancellation label[hidden] { display: none; }
+.training-cancellation textarea {
+    width: 100%;
+    padding: .55rem .65rem;
+    border: 1px solid #76877d;
+    border-radius: .55rem;
+    font: inherit;
+}
+.training-cancellation button { justify-self: start; }
+.training-cancelled { overflow-wrap: anywhere; }

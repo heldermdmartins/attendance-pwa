@@ -72,3 +72,18 @@ if (roster) {
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js').catch(console.error);
 }
+
+const trainingCancellation = document.querySelector('#training-cancellation');
+if (trainingCancellation) {
+    const checkbox = trainingCancellation.elements.namedItem('cancelled');
+    const reason = trainingCancellation.elements.namedItem('reason');
+    const reasonField = trainingCancellation.querySelector('#training-reason');
+
+    const updateReasonField = () => {
+        reasonField.hidden = !checkbox.checked;
+        reason.required = checkbox.checked;
+    };
+
+    checkbox.addEventListener('change', updateReasonField);
+    updateReasonField();
+}
