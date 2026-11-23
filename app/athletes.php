@@ -151,7 +151,7 @@ function saveAthletePhoto(int $id, array $upload): void
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Gestão de atletas</title>
-    <link rel="stylesheet" href="assets/styles.css?v=10">
+    <link rel="stylesheet" href="assets/styles.css?v=11">
 </head>
 <body>
 <?php require __DIR__ . '/navigation.php'; ?>
@@ -162,6 +162,15 @@ function saveAthletePhoto(int $id, array $upload): void
     <?php if ($id || $creating): ?>
         <p><a href="?action=athletes">Voltar aos atletas</a></p>
         <h2><?= $id ? 'Editar atleta' : 'Novo atleta' ?></h2>
+        <?php if ($id): ?>
+            <div class="athlete-photo-preview" aria-hidden="true">
+                <?php if ($hasPhoto): ?>
+                    <img src="?action=photo&amp;id=<?= $id ?>" alt="">
+                <?php else: ?>
+                    <?= escape(athleteInitials($name)) ?>
+                <?php endif; ?>
+            </div>
+        <?php endif; ?>
         <form class="credentials user-form" method="post">
             <input type="hidden" name="csrf" value="<?= $csrf ?>">
             <label>Nome <input name="name" value="<?= escape($name) ?>" maxlength="150" required></label>
@@ -176,9 +185,6 @@ function saveAthletePhoto(int $id, array $upload): void
         </form>
         <?php if ($id): ?>
             <h2>Fotografia</h2>
-            <?php if ($hasPhoto): ?>
-                <p><img class="athlete-photo-preview" src="?action=photo&amp;id=<?= $id ?>" alt="Fotografia atual"></p>
-            <?php endif; ?>
             <form class="credentials user-form" method="post" enctype="multipart/form-data">
                 <input type="hidden" name="csrf" value="<?= $csrf ?>">
                 <label>Escolher fotografia (JPEG, PNG ou WebP)
