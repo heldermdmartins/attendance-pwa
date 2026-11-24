@@ -41,3 +41,4 @@
 !/database/add-club-admin-position.sql
 !/database/add-activity-log.sql
 !/database/add-activity-athlete-name.sql
+!/database/add-coach-attendance.sql

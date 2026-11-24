@@ -337,3 +337,6 @@ button { cursor: pointer; }
 
 .user-list-identity { display: flex; align-items: center; gap: .65rem; }
 .user-list-identity > div { min-width: 0; overflow-wrap: anywhere; }
+
+.attendance-group + .attendance-group { margin-top: 1.5rem; }
+.attendance-group h2 { margin: 0; font-size: 1.25rem; }

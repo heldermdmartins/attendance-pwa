@@ -128,7 +128,9 @@ try {
         session_write_close();
 
         $data = json_decode(file_get_contents('php://input', false, null, 0, 4096), true);
-        if (!is_int($data['athlete'] ?? null) || $data['athlete'] < 1
+        $kind = $data['kind'] ?? 'athlete';
+        $personId = $data['id'] ?? $data['athlete'] ?? null;
+        if (!in_array($kind, ['athlete', 'trainer'], true) || !is_int($personId) || $personId < 1
             || !is_bool($data['present'] ?? null) || !is_string($data['date'] ?? null)) {
             respond(422, ['error' => 'Pedido inválido.']);
         }
@@ -136,12 +138,9 @@ try {
             respond(409, ['error' => 'Só é possível marcar presenças no dia de um treino.']);
         }
 
-        $query = db()->prepare('SELECT name FROM athletes WHERE id = ? AND active = 1');
-        $query->execute([$data['athlete']]);
-        $athleteName = $query->fetchColumn();
-        if ($athleteName === false) {
-            respond(404, ['error' => 'Atleta indisponível.']);
-        }
+        $isTrainer = $kind === 'trainer';
+        $table = $isTrainer ? 'coach_attendance' : 'attendance';
+        $personColumn = $isTrainer ? 'trainer_id' : 'athlete_id';
         $pdo = db();
         $pdo->beginTransaction();
         // Serialize cancellation and attendance writes for the selected day.
@@ -155,33 +154,47 @@ try {
             $pdo->rollBack();
             respond(409, ['error' => 'O treino foi cancelado. Atualiza a página para veres o motivo.']);
         }
+        $query = $pdo->prepare($isTrainer
+            ? "SELECT COALESCE(NULLIF(name, ''), CONCAT('Treinador #', id)) FROM coaches
+               WHERE id = ? AND active = 1 AND club_position = 'coach' FOR UPDATE"
+            : 'SELECT name FROM athletes WHERE id = ? AND active = 1 FOR UPDATE');
+        $query->execute([$personId]);
+        $personName = $query->fetchColumn();
+        if ($personName === false) {
+            $pdo->rollBack();
+            respond(404, ['error' => $isTrainer ? 'Treinador indisponível.' : 'Atleta indisponível.']);
+        }
+
         $present = (int) $data['present'];
-        $previous = $pdo->prepare('SELECT present FROM attendance WHERE athlete_id = ? AND training_date = ?');
-        $previous->execute([$data['athlete'], $today]);
+        $previous = $pdo->prepare("SELECT present FROM $table WHERE $personColumn = ? AND training_date = ?");
+        $previous->execute([$personId, $today]);
         $previousPresent = $previous->fetchColumn();
         if ($previousPresent !== false && (int) $previousPresent === $present) {
             $pdo->commit();
             respond(200, ['present' => $data['present']]);
         }
         $query = $pdo->prepare(
-            'INSERT INTO attendance (athlete_id, training_date, present, coach_id) VALUES (?, ?, ?, ?)
-             ON DUPLICATE KEY UPDATE present = ?, coach_id = ?, updated_at = CURRENT_TIMESTAMP'
+            "INSERT INTO $table ($personColumn, training_date, present, coach_id) VALUES (?, ?, ?, ?)
+             ON DUPLICATE KEY UPDATE present = ?, coach_id = ?, updated_at = CURRENT_TIMESTAMP"
         );
-        $query->execute([$data['athlete'], $today, $present, $coach, $present, $coach]);
+        $query->execute([$personId, $today, $present, $coach, $present, $coach]);
         recordActivity($pdo, $currentAccount['name'] ?: $currentAccount['username'],
-            $present ? 'attendance_marked' : 'attendance_unmarked', $athleteName);
+            $present ? 'attendance_marked' : 'attendance_unmarked',
+            $isTrainer ? null : $personName, $isTrainer ? $personName : null);
         $pdo->commit();
         respond(200, ['present' => $data['present']]);
     }
 
-    if ($route === 'user-photo' && $method === 'GET') {
+    if (in_array($route, ['user-photo', 'trainer-photo'], true) && $method === 'GET') {
         session_write_close();
         $id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
-        if (!$isAdmin || !$id || !is_readable(userPhotoPath($id))) {
+        if ($coach === null || ($route === 'user-photo' && !$isAdmin) || !$id || !is_readable(userPhotoPath($id))) {
             http_response_code(404);
             exit;
         }
-        $query = db()->prepare('SELECT id FROM coaches WHERE id = ?');
+        $query = db()->prepare($route === 'trainer-photo'
+            ? "SELECT id FROM coaches WHERE id = ? AND active = 1 AND club_position = 'coach'"
+            : 'SELECT id FROM coaches WHERE id = ?');
         $query->execute([$id]);
         if (!$query->fetchColumn()) {
             http_response_code(404);
@@ -262,6 +275,7 @@ try {
     }
 
     $athletes = [];
+    $trainers = [];
     if ($coach !== null) {
         $upcoming = upcomingTrainings($todayDate);
         $selected = array_key_first($upcoming);
@@ -299,6 +313,18 @@ try {
                    WHERE a.active = 1 ORDER BY a.name, a.id');
             $query->execute([$selected]);
             $athletes = $query->fetchAll(PDO::FETCH_ASSOC);
+
+            $query = db()->prepare($readOnlyRecords
+                ? "SELECT c.id, COALESCE(NULLIF(c.name, ''), CONCAT('Treinador #', c.id)) AS name, r.present,
+                          (c.active = 1 AND c.club_position = 'coach') AS photo_allowed
+                   FROM coach_attendance r INNER JOIN coaches c ON c.id = r.trainer_id
+                   WHERE r.training_date = ? ORDER BY name, c.id"
+                : "SELECT c.id, COALESCE(NULLIF(c.name, ''), CONCAT('Treinador #', c.id)) AS name,
+                          COALESCE(r.present, 0) AS present, 1 AS photo_allowed
+                   FROM coaches c LEFT JOIN coach_attendance r ON r.trainer_id = c.id AND r.training_date = ?
+                   WHERE c.active = 1 AND c.club_position = 'coach' ORDER BY name, c.id");
+            $query->execute([$selected]);
+            $trainers = $query->fetchAll(PDO::FETCH_ASSOC);
         }
     }
     session_write_close();
@@ -323,8 +349,8 @@ try {
     <title>Registo de presenças</title>
     <link rel="manifest" href="manifest.webmanifest?v=2">
     <link rel="apple-touch-icon" sizes="180x180" href="assets/sporting-icon-180.png">
-    <link rel="stylesheet" href="assets/styles.css?v=22">
-    <script src="assets/app.js?v=3" defer></script>
+    <link rel="stylesheet" href="assets/styles.css?v=24">
+    <script src="assets/app.js?v=4" defer></script>
 </head>
 <body<?= $coach === null ? ' class="login-page"' : '' ?>>
 <?php if ($coach !== null) require __DIR__ . '/../app/navigation.php'; ?>
@@ -377,12 +403,6 @@ try {
                     <span><?= escape($training[2]) ?></span>
                 <?php endif; ?>
             </div>
-            <?php if ($canMark): ?>
-                <strong id="count"><?= array_sum(array_column($athletes, 'present')) ?> / <?= count($athletes) ?> presentes</strong>
-            <?php elseif ($readOnlyRecords && $athletes): ?>
-                <?php $presentCount = array_sum(array_column($athletes, 'present')); ?>
-                <strong><?= $presentCount ?> <?= $presentCount === 1 ? 'presente' : 'presentes' ?></strong>
-            <?php endif; ?>
         </div>
         <?php if ($cancelled): ?>
             <p class="training-cancelled"><strong>Treino cancelado.</strong> <?= escape($cancellationReason) ?></p>
@@ -406,37 +426,54 @@ try {
         <?php if ($canMark): ?>
             <p class="feedback" id="feedback" role="status" aria-atomic="true"></p>
             <noscript><p>Ative o JavaScript para registar presenças.</p></noscript>
-            <?php if (!$athletes): ?><p>Ainda não há atletas ativos.</p><?php endif; ?>
         <?php elseif ($history): ?>
-            <p><?= $athletes ? 'Histórico de marcações' : 'Sem marcações nesta data.' ?></p>
+            <p><?= $athletes || $trainers ? 'Histórico de marcações' : 'Sem marcações nesta data.' ?></p>
         <?php elseif (!$cancelled): ?>
             <p>As marcações abrem no dia do treino.</p>
         <?php endif; ?>
-        <?php if ($athletes): ?>
-        <ul class="grid"<?= $canMark ? ' id="roster" data-csrf="' . $csrf . '" data-date="' . $selected . '"' : '' ?>>
-            <?php foreach ($athletes as $athlete): ?>
-                <?php $id = (int) $athlete['id']; $present = (bool) $athlete['present']; ?>
-                <li>
-                    <?php if ($canMark): ?>
-                    <button type="button" class="athlete" data-id="<?= $id ?>" aria-pressed="<?= $present ? 'true' : 'false' ?>">
-                    <?php else: ?>
-                    <div class="athlete history-card">
+        <?php foreach (['athlete' => ['Atletas', $athletes], 'trainer' => ['Treinadores', $trainers]] as $kind => [$label, $participants]): ?>
+            <?php if (!$canMark && !$participants) continue; ?>
+            <section class="attendance-group" aria-labelledby="attendance-<?= $kind ?>">
+                <header>
+                    <h2 id="attendance-<?= $kind ?>"><?= $label ?></h2>
+                    <?php if ($participants): ?>
+                        <strong data-attendance-count><?= array_sum(array_column($participants, 'present')) ?> / <?= count($participants) ?> presentes</strong>
                     <?php endif; ?>
-                        <span class="portrait" aria-hidden="true">
-                            <?= escape(nameInitials($athlete['name'])) ?>
-                            <?php if (is_readable(athletePhotoPath($id))): ?>
-                                <img src="?action=photo&amp;id=<?= $id ?>" alt="" loading="lazy">
+                </header>
+                <?php if (!$participants): ?>
+                    <p><?= $kind === 'trainer' ? 'Ainda não há treinadores ativos.' : 'Ainda não há atletas ativos.' ?></p>
+                <?php else: ?>
+                <ul class="grid"<?= $canMark ? ' data-roster="' . $kind . '" data-csrf="' . $csrf . '" data-date="' . $selected . '"' : '' ?>>
+                    <?php foreach ($participants as $person): ?>
+                        <?php
+                        $id = (int) $person['id'];
+                        $present = (bool) $person['present'];
+                        $photo = $kind === 'trainer' ? userPhotoPath($id) : athletePhotoPath($id);
+                        $photoAction = $kind === 'trainer' ? 'trainer-photo' : 'photo';
+                        ?>
+                        <li>
+                            <?php if ($canMark): ?>
+                            <button type="button" class="athlete" data-id="<?= $id ?>" aria-pressed="<?= $present ? 'true' : 'false' ?>">
+                            <?php else: ?>
+                            <div class="athlete history-card">
                             <?php endif; ?>
-                        </span>
-                        <span class="name" id="athlete-<?= $id ?>"><?= escape($athlete['name']) ?></span>
-                        <span class="state"<?= $canMark ? ' aria-hidden="true"' : '' ?>>
-                            <?= $present ? '✓ Presente' : ($readOnlyRecords ? 'Desmarcada' : 'Por marcar') ?>
-                        </span>
-                    <?= $canMark ? '</button>' : '</div>' ?>
-                </li>
-            <?php endforeach; ?>
-        </ul>
-        <?php endif; ?>
+                                <span class="portrait" aria-hidden="true">
+                                    <?= escape(nameInitials($person['name'])) ?>
+                                    <?php if (($person['photo_allowed'] ?? true) && is_readable($photo)): ?>
+                                        <img src="?action=<?= $photoAction ?>&amp;id=<?= $id ?>" alt="" loading="lazy">
+                                    <?php endif; ?>
+                                </span>
+                                <span class="name"><?= escape($person['name']) ?></span>
+                                <span class="state"<?= $canMark ? ' aria-hidden="true"' : '' ?>>
+                                    <?= $present ? '✓ Presente' : ($readOnlyRecords ? 'Desmarcada' : 'Por marcar') ?>
+                                </span>
+                            <?= $canMark ? '</button>' : '</div>' ?>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+                <?php endif; ?>
+            </section>
+        <?php endforeach; ?>
     <?php endif; ?>
 </main>
 <footer class="app-version">Versão <?= APP_VERSION ?></footer>

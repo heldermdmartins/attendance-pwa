@@ -15,11 +15,9 @@ if (menuToggle) {
     });
 }
 
-const roster = document.querySelector('#roster');
-
-if (roster) {
+for (const roster of document.querySelectorAll('[data-roster]')) {
     const feedback = document.querySelector('#feedback');
-    const count = document.querySelector('#count');
+    const count = roster.closest('.attendance-group').querySelector('[data-attendance-count]');
 
     roster.addEventListener('click', async (event) => {
         const card = event.target.closest('button[data-id]');
@@ -39,7 +37,8 @@ if (roster) {
                     'X-CSRF-Token': roster.dataset.csrf,
                 },
                 body: JSON.stringify({
-                    athlete: Number(card.dataset.id),
+                    kind: roster.dataset.roster,
+                    id: Number(card.dataset.id),
                     date: roster.dataset.date,
                     present,
                 }),

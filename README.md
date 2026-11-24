@@ -52,3 +52,5 @@ Para ativar cancelamentos numa instalação existente, aplique `database/add-tra
 ## Registo de atividade
 
 Em instalações existentes, aplique `database/add-activity-log.sql` antes de atualizar. O menu **Registo de atividade** está reservado a administradores e mostra inícios de sessão bem-sucedidos e alterações de presença a partir da instalação desta versão. As horas são guardadas em UTC e apresentadas no fuso horário de Lisboa.
+
+Em instalações existentes, aplique `database/add-coach-attendance.sql` para ativar as presenças dos treinadores. A grelha do dia inclui contas ativas com a posição Treinador. O histórico mantém as marcações dos treinadores mesmo depois de a conta ficar inativa.

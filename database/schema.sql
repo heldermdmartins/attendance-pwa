@@ -44,5 +44,18 @@ CREATE TABLE activity_log (
   user_name VARCHAR(254) NOT NULL,
   event_type ENUM('login', 'attendance_marked', 'attendance_unmarked') NOT NULL,
   athlete_name VARCHAR(150) NULL,
+  trainer_name VARCHAR(150) NULL,
   occurred_at DATETIME NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE coach_attendance (
+  trainer_id INT UNSIGNED NOT NULL,
+  training_date DATE NOT NULL,
+  present BOOLEAN NOT NULL,
+  coach_id INT UNSIGNED NOT NULL,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (trainer_id, training_date),
+  INDEX (training_date),
+  FOREIGN KEY (trainer_id) REFERENCES coaches(id),
+  FOREIGN KEY (coach_id) REFERENCES coaches(id)
+) ENGINE=InnoDB;
