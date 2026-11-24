@@ -187,7 +187,7 @@ $accounts = $pdo->query('SELECT id, username, name, email, phone, role, club_pos
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Gestão de utilizadores</title>
     <link rel="icon" type="image/png" sizes="192x192" href="assets/sporting-icon-192.png">
-    <link rel="stylesheet" href="assets/styles.css?v=23">
+    <link rel="stylesheet" href="assets/styles.css?v=26">
     <script src="assets/app.js?v=2" defer></script>
 </head>
 <body>
@@ -212,7 +212,7 @@ $accounts = $pdo->query('SELECT id, username, name, email, phone, role, club_pos
     <?php elseif (!$adding && !$editing): ?>
     <p><a class="primary user-add" href="?action=users&amp;view=new#user-form">Adicionar utilizador</a></p>
     <div class="users-table-scroll" role="region" aria-label="Lista de utilizadores" tabindex="0">
-        <table class="users-table" role="table" aria-label="Utilizadores">
+        <table class="users-table accounts-table" role="table" aria-label="Utilizadores">
             <thead role="rowgroup">
                 <tr role="row">
                     <th scope="col" role="columnheader">Nome</th>
@@ -241,7 +241,7 @@ $accounts = $pdo->query('SELECT id, username, name, email, phone, role, club_pos
                             </div>
                         </div>
                     </th>
-                    <td role="cell">
+                    <td class="account-contacts" role="cell">
                         <?= escape($person['email'] ?: '—') ?>
                         <?php if ($person['phone'] !== ''): ?><small><?= escape($person['phone']) ?></small><?php endif; ?>
                     </td>

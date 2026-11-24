@@ -336,7 +336,14 @@ button { cursor: pointer; }
 .training-cancelled { overflow-wrap: anywhere; }
 
 .user-list-identity { display: flex; align-items: center; gap: .65rem; }
-.user-list-identity > div { min-width: 0; overflow-wrap: anywhere; }
+.user-list-identity > div { min-width: 0; overflow-wrap: break-word; }
+.accounts-table .account-contacts { overflow-wrap: anywhere; }
+
+@media (min-width: 54.01rem) {
+    .accounts-table th[scope="row"] { min-width: 12rem; }
+    .accounts-table .account-contacts { min-width: 9rem; }
+    .accounts-table .account-actions { flex-wrap: wrap; }
+}
 
 .attendance-group + .attendance-group { margin-top: 1.5rem; }
 .attendance-group h2 { margin: 0; font-size: 1.25rem; }
