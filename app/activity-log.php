@@ -1,8 +1,8 @@
 <?php
 declare(strict_types=1);
 
-function recordActivity(PDO $pdo, string $name, string $event): void
+function recordActivity(PDO $pdo, string $name, string $event, ?string $athleteName = null): void
 {
-    $statement = $pdo->prepare('INSERT INTO activity_log (user_name, event_type, occurred_at) VALUES (?, ?, UTC_TIMESTAMP())');
-    $statement->execute([$name, $event]);
+    $statement = $pdo->prepare('INSERT INTO activity_log (user_name, event_type, athlete_name, occurred_at) VALUES (?, ?, ?, UTC_TIMESTAMP())');
+    $statement->execute([$name, $event, $athleteName]);
 }

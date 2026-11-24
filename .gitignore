@@ -39,3 +39,4 @@
 !/database/add-training-cancellations.sql
 !/database/add-club-admin-position.sql
 !/database/add-activity-log.sql
+!/database/add-activity-athlete-name.sql

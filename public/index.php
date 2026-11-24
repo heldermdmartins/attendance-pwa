@@ -135,9 +135,10 @@ try {
             respond(409, ['error' => 'Só é possível marcar presenças no dia de um treino.']);
         }
 
-        $query = db()->prepare('SELECT id FROM athletes WHERE id = ? AND active = 1');
+        $query = db()->prepare('SELECT name FROM athletes WHERE id = ? AND active = 1');
         $query->execute([$data['athlete']]);
-        if (!$query->fetchColumn()) {
+        $athleteName = $query->fetchColumn();
+        if ($athleteName === false) {
             respond(404, ['error' => 'Atleta indisponível.']);
         }
         $pdo = db();
@@ -167,7 +168,7 @@ try {
         );
         $query->execute([$data['athlete'], $today, $present, $coach, $present, $coach]);
         recordActivity($pdo, $currentAccount['name'] ?: $currentAccount['username'],
-            $present ? 'attendance_marked' : 'attendance_unmarked');
+            $present ? 'attendance_marked' : 'attendance_unmarked', $athleteName);
         $pdo->commit();
         respond(200, ['present' => $data['present']]);
     }

@@ -15,10 +15,10 @@ if (isset($_GET['before']) && !$before) {
 }
 $pdo = db();
 if ($before) {
-    $query = $pdo->prepare('SELECT id, user_name, event_type, occurred_at FROM activity_log WHERE id < ? ORDER BY id DESC LIMIT 51');
+    $query = $pdo->prepare('SELECT id, user_name, event_type, athlete_name, occurred_at FROM activity_log WHERE id < ? ORDER BY id DESC LIMIT 51');
     $query->execute([$before]);
 } else {
-    $query = $pdo->query('SELECT id, user_name, event_type, occurred_at FROM activity_log ORDER BY id DESC LIMIT 51');
+    $query = $pdo->query('SELECT id, user_name, event_type, athlete_name, occurred_at FROM activity_log ORDER BY id DESC LIMIT 51');
 }
 $entries = $query->fetchAll(PDO::FETCH_ASSOC);
 $more = count($entries) > 50;
@@ -50,6 +50,7 @@ $lisbon = new DateTimeZone('Europe/Lisbon');
                     <tr role="row">
                         <th scope="col" role="columnheader">Utilizador</th>
                         <th scope="col" role="columnheader">Atividade</th>
+                        <th scope="col" role="columnheader">Atleta</th>
                         <th scope="col" role="columnheader">Data e hora</th>
                     </tr>
                 </thead>
@@ -59,6 +60,7 @@ $lisbon = new DateTimeZone('Europe/Lisbon');
                         <tr role="row">
                             <th scope="row" role="rowheader"><?= escape($entry['user_name']) ?></th>
                             <td role="cell"><?= escape($labels[$entry['event_type']]) ?></td>
+                            <td role="cell"><?= escape($entry['athlete_name'] ?? '—') ?></td>
                             <td role="cell"><time datetime="<?= $time->format(DATE_ATOM) ?>"><?= $time->format('d/m/Y H:i:s') ?></time></td>
                         </tr>
                     <?php endforeach; ?>
