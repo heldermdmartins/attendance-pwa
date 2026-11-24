@@ -9,8 +9,10 @@
         <div class="app-menu-panel" id="app-menu-panel">
             <ul class="app-menu-links">
                 <li><a href="./"<?= $route === '' ? ' aria-current="page"' : '' ?>>Presenças</a></li>
+                <?php if ($canViewAthletes): ?>
+                    <li><a href="?action=athletes"<?= $route === 'athletes' ? ' aria-current="page"' : '' ?>><?= $isAdmin ? 'Gestão de atletas' : 'Atletas' ?></a></li>
+                <?php endif; ?>
                 <?php if ($isAdmin): ?>
-                    <li><a href="?action=athletes"<?= $route === 'athletes' ? ' aria-current="page"' : '' ?>>Gestão de atletas</a></li>
                     <li><a href="?action=users"<?= $route === 'users' ? ' aria-current="page"' : '' ?>>Gestão de utilizadores</a></li>
                     <li><a href="?action=activity"<?= $route === 'activity' ? ' aria-current="page"' : '' ?>>Registo de atividade</a></li>
                 <?php endif; ?>

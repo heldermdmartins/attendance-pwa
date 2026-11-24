@@ -13,8 +13,8 @@ $details = [];
 $categories = ['Bambi', 'Escolar', 'Infantil', 'Iniciado', 'Cadete', 'Juvenil', 'Júnior', 'Sénior', 'Master'];
 $active = true;
 if ($id) {
-    $statement = $pdo->prepare('SELECT name, details, active FROM athletes WHERE id = ?');
-    $statement->execute([$id]);
+    $statement = $pdo->prepare('SELECT name, details, active FROM athletes WHERE id = ? AND (active = 1 OR ? = 1)');
+    $statement->execute([$id, (int) $isAdmin]);
     $athlete = $statement->fetch(PDO::FETCH_ASSOC);
     if (!$athlete) {
         http_response_code(404);
@@ -116,7 +116,10 @@ $message = $_SESSION['athlete_message'] ?? '';
 unset($_SESSION['athlete_message']);
 session_write_close();
 $hasPhoto = $id && is_readable(athletePhotoPath($id));
-$athletes = $id || $creating ? [] : $pdo->query('SELECT id, name, active FROM athletes ORDER BY name, id')->fetchAll(PDO::FETCH_ASSOC);
+$athletes = $id || $creating ? [] : $pdo->query(
+    'SELECT id, name, active FROM athletes' . ($isAdmin ? '' : ' WHERE active = 1') . ' ORDER BY name, id'
+)->fetchAll(PDO::FETCH_ASSOC);
+$pageTitle = $isAdmin ? 'Gestão de atletas' : 'Atletas';
 
 function saveAthletePhoto(int $id, array $upload): void
 {
@@ -178,19 +181,19 @@ function saveAthletePhoto(int $id, array $upload): void
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Gestão de atletas</title>
+    <title><?= $pageTitle ?></title>
     <link rel="stylesheet" href="assets/styles.css?v=19">
     <script src="assets/app.js?v=2" defer></script>
 </head>
 <body>
 <?php require __DIR__ . '/navigation.php'; ?>
 <main>
-    <h1>Gestão de atletas</h1>
+    <h1><?= $pageTitle ?></h1>
     <?php if ($message !== ''): ?><p role="status"><?= escape($message) ?></p><?php endif; ?>
     <?php if ($error !== ''): ?><p class="error" role="alert"><?= escape($error) ?></p><?php endif; ?>
     <?php if ($id || $creating): ?>
         <p><a href="?action=athletes">Voltar aos atletas</a></p>
-        <h2><?= $id ? 'Editar atleta' : 'Novo atleta' ?></h2>
+        <?php if ($isAdmin): ?><h2><?= $id ? 'Editar atleta' : 'Novo atleta' ?></h2><?php endif; ?>
         <?php if ($id): ?>
             <div class="athlete-photo-preview" aria-hidden="true">
                 <?php if ($hasPhoto): ?>
@@ -200,6 +203,15 @@ function saveAthletePhoto(int $id, array $upload): void
                 <?php endif; ?>
             </div>
         <?php endif; ?>
+        <?php if (!$isAdmin): ?>
+            <h2><?= escape($name) ?></h2>
+            <dl>
+                <?php foreach (['class', 'category', 'season'] as $field): ?>
+                    <dt><strong><?= escape(ATHLETE_FIELDS[$field]) ?></strong></dt>
+                    <dd><?= escape(($details[$field] ?? '') ?: '—') ?></dd>
+                <?php endforeach; ?>
+            </dl>
+        <?php else: ?>
         <form class="credentials user-form" method="post">
             <input type="hidden" name="csrf" value="<?= $csrf ?>">
             <label>Nome <input name="name" value="<?= escape($name) ?>" maxlength="150" required></label>
@@ -263,8 +275,11 @@ function saveAthletePhoto(int $id, array $upload): void
                 </form>
             <?php endif; ?>
         <?php endif; ?>
+        <?php endif; ?>
     <?php else: ?>
-        <p><a class="primary user-add" href="?action=athletes&amp;view=new">Adicionar atleta</a></p>
+        <?php if ($isAdmin): ?>
+            <p><a class="primary user-add" href="?action=athletes&amp;view=new">Adicionar atleta</a></p>
+        <?php endif; ?>
         <ul class="athlete-directory">
             <?php foreach ($athletes as $athlete): ?>
                 <?php $athleteId = (int) $athlete['id']; ?>

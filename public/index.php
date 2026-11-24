@@ -53,8 +53,9 @@ try {
     $csrf = $_SESSION['csrf'] ??= bin2hex(random_bytes(32));
     $coach = $_SESSION['coach'] ?? null;
     $isAdmin = false;
+    $canViewAthletes = false;
     if ($coach !== null) {
-        $query = db()->prepare('SELECT role, name, username FROM coaches WHERE id = ? AND active = 1');
+        $query = db()->prepare('SELECT role, club_position, name, username FROM coaches WHERE id = ? AND active = 1');
         $query->execute([$coach]);
         $currentAccount = $query->fetch(PDO::FETCH_ASSOC);
         if (!$currentAccount) {
@@ -62,6 +63,7 @@ try {
             unset($_SESSION['coach'], $_SESSION['seen']);
         } else {
             $isAdmin = $currentAccount['role'] === 'admin';
+            $canViewAthletes = $isAdmin || $currentAccount['club_position'] === 'coach';
             $_SESSION['seen'] = time();
         }
     }
@@ -74,9 +76,9 @@ try {
         if ($coach === null) {
             redirectHome();
         }
-        if (!$isAdmin) {
+        if (!$isAdmin && ($route !== 'athletes' || !$canViewAthletes || $method !== 'GET' || isset($_GET['view']))) {
             http_response_code(403);
-            exit('Área reservada a administradores.');
+            exit('Não tens permissão para esta ação.');
         }
         require __DIR__ . '/../app/' . $route . '.php';
         exit;
