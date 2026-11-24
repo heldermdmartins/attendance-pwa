@@ -13,6 +13,7 @@
 !/app/athlete-profile.php
 !/app/profile-photo.php
 !/app/profile.php
+!/app/remember-login.php
 !/app/athletes.php
 !/app/training-schedule.php
 !/bin/
@@ -43,3 +44,4 @@
 !/database/add-activity-log.sql
 !/database/add-activity-athlete-name.sql
 !/database/add-coach-attendance.sql
+!/database/add-remember-login.sql

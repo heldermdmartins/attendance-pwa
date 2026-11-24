@@ -4,6 +4,7 @@ declare(strict_types=1);
 require __DIR__ . '/../app/bootstrap.php';
 require __DIR__ . '/../app/athlete-profile.php';
 require __DIR__ . '/../app/profile-photo.php';
+require __DIR__ . '/../app/remember-login.php';
 require __DIR__ . '/../app/training-schedule.php';
 require __DIR__ . '/../app/activity-log.php';
 
@@ -47,8 +48,11 @@ try {
     session_set_cookie_params(['path' => '/', 'secure' => $https, 'httponly' => true, 'samesite' => 'Lax']);
     session_start();
     if (isset($_SESSION['coach']) && time() - $_SESSION['seen'] > 3600) {
-        $_SESSION = [];
+        unset($_SESSION['coach'], $_SESSION['seen'], $_SESSION['credential']);
         session_regenerate_id(true);
+    }
+    if (!isset($_SESSION['coach']) && !in_array($route, ['login', 'logout'], true)) {
+        restoreRememberedLogin($https);
     }
 
     $csrf = $_SESSION['csrf'] ??= bin2hex(random_bytes(32));
@@ -231,6 +235,7 @@ try {
             exit('Atualize a página e tente novamente.');
         }
         if ($route === 'logout') {
+            forgetRememberedLogin($https);
             $_SESSION = [];
             session_regenerate_id(true);
             redirectHome();
@@ -264,12 +269,13 @@ try {
             if (strlen($password) <= 72 && password_verify($password, $hash) && $account) {
                 $pdo->prepare('DELETE FROM login_limits WHERE address = ?')->execute([$address]);
                 recordActivity($pdo, $account['name'] ?: $account['username'], 'login');
+                forgetRememberedLogin($https);
+                $credential = hash('sha256', $account['password_hash']);
+                if (($_POST['remember'] ?? '') === '1') {
+                    rememberLogin((int) $account['id'], $credential, $https);
+                }
                 session_regenerate_id(true);
-                $_SESSION = [
-                    'coach' => (int) $account['id'],
-                    'seen' => time(),
-                    'credential' => hash('sha256', $account['password_hash']),
-                ];
+                $_SESSION = ['coach' => (int) $account['id'], 'seen' => time(), 'credential' => $credential];
                 redirectHome();
             }
             $error = 'Utilizador ou palavra-passe incorretos.';
@@ -355,7 +361,7 @@ try {
     <link rel="manifest" href="manifest.webmanifest?v=2">
     <link rel="apple-touch-icon" sizes="180x180" href="assets/sporting-icon-180.png">
     <link rel="icon" type="image/png" sizes="192x192" href="assets/sporting-icon-192.png">
-    <link rel="stylesheet" href="assets/styles.css?v=24">
+    <link rel="stylesheet" href="assets/styles.css?v=25">
     <script src="assets/app.js?v=4" defer></script>
 </head>
 <body<?= $coach === null ? ' class="login-page"' : '' ?>>
@@ -370,6 +376,10 @@ try {
             <?php if ($error !== ''): ?><p class="error" role="alert"><?= escape($error) ?></p><?php endif; ?>
             <label>Email <input name="username" autocomplete="username" inputmode="email" autocapitalize="none" spellcheck="false" required maxlength="254"></label>
             <label>Palavra-passe <input name="password" type="password" autocomplete="current-password" required></label>
+            <label class="login-remember">
+                <input type="checkbox" name="remember" value="1" <?= ($_POST['remember'] ?? '') === '1' ? 'checked' : '' ?>>
+                Manter sessão iniciada
+            </label>
             <button class="primary">Entrar</button>
         </form>
     <?php else: ?>

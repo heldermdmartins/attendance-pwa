@@ -54,3 +54,7 @@ Para ativar cancelamentos numa instalação existente, aplique `database/add-tra
 Em instalações existentes, aplique `database/add-activity-log.sql` antes de atualizar. O menu **Registo de atividade** está reservado a administradores e mostra inícios de sessão bem-sucedidos e alterações de presença a partir da instalação desta versão. As horas são guardadas em UTC e apresentadas no fuso horário de Lisboa.
 
 Em instalações existentes, aplique `database/add-coach-attendance.sql` para ativar as presenças dos treinadores. A grelha do dia inclui contas ativas com a posição Treinador. O histórico mantém as marcações dos treinadores mesmo depois de a conta ficar inativa.
+
+## Manter sessão iniciada
+
+Em instalações existentes, aplique `database/add-remember-login.sql` antes de atualizar. A opção no formulário de entrada permite retomar a sessão no mesmo navegador durante 30 dias. Sair revoga a sessão memorizada nesse navegador. Mudar a palavra-passe invalida as sessões memorizadas dessa conta.

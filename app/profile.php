@@ -65,6 +65,7 @@ if ($method === 'POST') {
             if ($statement->rowCount() !== 1) {
                 throw new InvalidArgumentException('A conta foi atualizada entretanto. Volta a abrir o perfil e tenta novamente.');
             }
+            forgetRememberedLogin($https);
             session_regenerate_id(true);
             $_SESSION['credential'] = hash('sha256', $hash);
             unset($_SESSION['csrf']);
