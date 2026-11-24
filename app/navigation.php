@@ -16,6 +16,7 @@
                     <li><a href="?action=users"<?= $route === 'users' ? ' aria-current="page"' : '' ?>>Gestão de utilizadores</a></li>
                     <li><a href="?action=activity"<?= $route === 'activity' ? ' aria-current="page"' : '' ?>>Registo de atividade</a></li>
                 <?php endif; ?>
+                <li><a href="?action=profile"<?= $route === 'profile' ? ' aria-current="page"' : '' ?>>O meu perfil</a></li>
             </ul>
             <form method="post" action="?action=logout">
                 <input type="hidden" name="csrf" value="<?= $csrf ?>">

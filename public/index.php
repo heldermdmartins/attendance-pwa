@@ -56,12 +56,13 @@ try {
     $isAdmin = false;
     $canViewAthletes = false;
     if ($coach !== null) {
-        $query = db()->prepare('SELECT role, club_position, name, username FROM coaches WHERE id = ? AND active = 1');
+        $query = db()->prepare('SELECT role, club_position, name, username, email, phone, password_hash FROM coaches WHERE id = ? AND active = 1');
         $query->execute([$coach]);
         $currentAccount = $query->fetch(PDO::FETCH_ASSOC);
-        if (!$currentAccount) {
+        if (!$currentAccount || !hash_equals(hash('sha256', $currentAccount['password_hash']), $_SESSION['credential'] ?? '')) {
             $coach = null;
-            unset($_SESSION['coach'], $_SESSION['seen']);
+            $_SESSION = ['csrf' => $csrf];
+            session_regenerate_id(true);
         } else {
             $isAdmin = $currentAccount['role'] === 'admin';
             $canViewAthletes = $isAdmin || $currentAccount['club_position'] === 'coach';
@@ -73,11 +74,11 @@ try {
     $todayDate = new DateTimeImmutable('today');
     $today = $todayDate->format('Y-m-d');
     $error = '';
-    if (in_array($route, ['users', 'athletes', 'activity'], true)) {
+    if (in_array($route, ['users', 'athletes', 'activity', 'profile'], true)) {
         if ($coach === null) {
             redirectHome();
         }
-        if (!$isAdmin && ($route !== 'athletes' || !$canViewAthletes || $method !== 'GET' || isset($_GET['view']))) {
+        if ($route !== 'profile' && !$isAdmin && ($route !== 'athletes' || !$canViewAthletes || $method !== 'GET' || isset($_GET['view']))) {
             http_response_code(403);
             exit('Não tens permissão para esta ação.');
         }
@@ -188,7 +189,7 @@ try {
     if (in_array($route, ['user-photo', 'trainer-photo'], true) && $method === 'GET') {
         session_write_close();
         $id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
-        if ($coach === null || ($route === 'user-photo' && !$isAdmin) || !$id || !is_readable(userPhotoPath($id))) {
+        if ($coach === null || ($route === 'user-photo' && !$isAdmin && $id !== $coach) || !$id || !is_readable(userPhotoPath($id))) {
             http_response_code(404);
             exit;
         }
@@ -264,7 +265,11 @@ try {
                 $pdo->prepare('DELETE FROM login_limits WHERE address = ?')->execute([$address]);
                 recordActivity($pdo, $account['name'] ?: $account['username'], 'login');
                 session_regenerate_id(true);
-                $_SESSION = ['coach' => (int) $account['id'], 'seen' => time()];
+                $_SESSION = [
+                    'coach' => (int) $account['id'],
+                    'seen' => time(),
+                    'credential' => hash('sha256', $account['password_hash']),
+                ];
                 redirectHome();
             }
             $error = 'Utilizador ou palavra-passe incorretos.';
