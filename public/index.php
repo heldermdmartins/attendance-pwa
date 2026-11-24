@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require __DIR__ . '/../app/bootstrap.php';
 require __DIR__ . '/../app/athlete-profile.php';
+require __DIR__ . '/../app/profile-photo.php';
 require __DIR__ . '/../app/training-schedule.php';
 require __DIR__ . '/../app/activity-log.php';
 
@@ -171,6 +172,24 @@ try {
             $present ? 'attendance_marked' : 'attendance_unmarked', $athleteName);
         $pdo->commit();
         respond(200, ['present' => $data['present']]);
+    }
+
+    if ($route === 'user-photo' && $method === 'GET') {
+        session_write_close();
+        $id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+        if (!$isAdmin || !$id || !is_readable(userPhotoPath($id))) {
+            http_response_code(404);
+            exit;
+        }
+        $query = db()->prepare('SELECT id FROM coaches WHERE id = ?');
+        $query->execute([$id]);
+        if (!$query->fetchColumn()) {
+            http_response_code(404);
+            exit;
+        }
+        header('Content-Type: image/webp');
+        readfile(userPhotoPath($id));
+        exit;
     }
 
     if ($route === 'photo' && $method === 'GET') {
@@ -404,7 +423,7 @@ try {
                     <div class="athlete history-card">
                     <?php endif; ?>
                         <span class="portrait" aria-hidden="true">
-                            <?= escape(athleteInitials($athlete['name'])) ?>
+                            <?= escape(nameInitials($athlete['name'])) ?>
                             <?php if (is_readable(athletePhotoPath($id))): ?>
                                 <img src="?action=photo&amp;id=<?= $id ?>" alt="" loading="lazy">
                             <?php endif; ?>

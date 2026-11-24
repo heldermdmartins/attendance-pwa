@@ -334,3 +334,6 @@ button { cursor: pointer; }
 }
 .training-cancellation button { justify-self: start; }
 .training-cancelled { overflow-wrap: anywhere; }
+
+.user-list-identity { display: flex; align-items: center; gap: .65rem; }
+.user-list-identity > div { min-width: 0; overflow-wrap: anywhere; }

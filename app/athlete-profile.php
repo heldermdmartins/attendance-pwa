@@ -15,7 +15,7 @@ const ATHLETE_FIELDS = [
     'season' => 'Época',
 ];
 
-function athleteInitials(string $name): string
+function nameInitials(string $name): string
 {
     $parts = preg_split('/\s+/u', trim($name), -1, PREG_SPLIT_NO_EMPTY);
     if (!$parts) {

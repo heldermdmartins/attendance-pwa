@@ -50,6 +50,28 @@ if ($method === 'POST') {
     }
 
     $operation = $_POST['operation'] ?? 'save';
+    if (in_array($operation, ['photo', 'remove-photo'], true)) {
+        if (!$editing || $confirming) {
+            http_response_code(400);
+            exit('Escolhe uma conta existente.');
+        }
+        $photoPath = userPhotoPath($editing);
+        try {
+            if ($operation === 'photo') {
+                saveProfilePhoto($photoPath, $_FILES['photo'] ?? []);
+                $_SESSION['users_saved'] = 'Fotografia guardada.';
+            } else {
+                if (is_file($photoPath) && !unlink($photoPath)) {
+                    throw new RuntimeException('Photo removal failed.');
+                }
+                $_SESSION['users_saved'] = 'Fotografia removida.';
+            }
+        } catch (InvalidArgumentException $exception) {
+            $_SESSION['users_error'] = $exception->getMessage();
+        }
+        header('Location: ?action=users&id=' . $editing . '#user-photo', true, 303);
+        exit;
+    }
     if (in_array($operation, ['activate', 'deactivate', 'delete'], true)) {
         if (!$editing || $self || ($operation === 'delete' && !$confirming)) {
             http_response_code(403);
@@ -62,6 +84,9 @@ if ($method === 'POST') {
                 : 'UPDATE coaches SET active = ? WHERE id = ?');
             $query->execute($operation === 'delete' ? [$editing] : [(int) ($operation === 'activate'), $editing]);
             $pdo->commit();
+            if ($operation === 'delete' && is_file(userPhotoPath($editing)) && !@unlink(userPhotoPath($editing))) {
+                error_log('Could not remove photo of deleted account ' . $editing);
+            }
             $_SESSION['users_saved'] = match ($operation) {
                 'activate' => 'Conta ativada.',
                 'deactivate' => 'Conta desativada.',
@@ -161,7 +186,7 @@ $accounts = $pdo->query('SELECT id, username, name, email, phone, role, club_pos
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Gestão de utilizadores</title>
-    <link rel="stylesheet" href="assets/styles.css?v=19">
+    <link rel="stylesheet" href="assets/styles.css?v=23">
     <script src="assets/app.js?v=2" defer></script>
 </head>
 <body>
@@ -202,8 +227,18 @@ $accounts = $pdo->query('SELECT id, username, name, email, phone, role, club_pos
                 <?php $id = (int) $person['id']; $username = escape($person['username']); ?>
                 <tr role="row">
                     <th scope="row" role="rowheader">
-                        <?= escape($person['name'] ?: $person['username']) ?>
-                        <?php if ($person['name'] !== '' && $person['email'] === ''): ?><small><?= $username ?></small><?php endif; ?>
+                        <div class="user-list-identity">
+                            <span class="portrait athlete-directory-portrait" aria-hidden="true">
+                                <?= escape(nameInitials($person['name'] ?: $person['username'])) ?>
+                                <?php if (is_readable(userPhotoPath($id))): ?>
+                                    <img src="?action=user-photo&amp;id=<?= $id ?>" alt="" loading="lazy">
+                                <?php endif; ?>
+                            </span>
+                            <div>
+                                <?= escape($person['name'] ?: $person['username']) ?>
+                                <?php if ($person['name'] !== '' && $person['email'] === ''): ?><small><?= $username ?></small><?php endif; ?>
+                            </div>
+                        </div>
                     </th>
                     <td role="cell">
                         <?= escape($person['email'] ?: '—') ?>
@@ -234,6 +269,18 @@ $accounts = $pdo->query('SELECT id, username, name, email, phone, role, club_pos
     <?php else: ?>
     <section id="user-form">
         <h2><?= $editing ? 'Editar conta' : 'Nova conta' ?></h2>
+        <?php if ($editing): ?>
+            <?php $hasPhoto = is_readable(userPhotoPath($editing)); ?>
+            <div class="athlete-photo-preview" aria-hidden="true">
+                <?php if ($hasPhoto): ?>
+                    <img src="?action=user-photo&amp;id=<?= $editing ?>" alt="">
+                <?php else: ?>
+                    <?= escape(nameInitials($account['name'] ?: $account['username'])) ?>
+                <?php endif; ?>
+            </div>
+        <?php else: ?>
+            <p>Podes carregar a fotografia depois de criares a conta.</p>
+        <?php endif; ?>
         <form class="credentials user-form" method="post" action="?action=users<?= $editing ? '&amp;id=' . $editing : '' ?>#user-form">
             <input type="hidden" name="csrf" value="<?= $csrf ?>">
             <?php if ($error !== ''): ?><p class="error" role="alert"><?= escape($error) ?></p><?php endif; ?>
@@ -274,6 +321,24 @@ $accounts = $pdo->query('SELECT id, username, name, email, phone, role, club_pos
             </div>
         </form>
     </section>
+    <?php if ($editing): ?>
+        <section id="user-photo">
+            <h2>Fotografia</h2>
+            <form class="credentials user-form" method="post" enctype="multipart/form-data" action="?action=users&amp;id=<?= $editing ?>#user-photo">
+                <input type="hidden" name="csrf" value="<?= $csrf ?>">
+                <label>Escolher fotografia (JPEG, PNG ou WebP)
+                    <input name="photo" type="file" accept="image/jpeg,image/png,image/webp" required>
+                </label>
+                <button class="primary" name="operation" value="photo">Carregar fotografia</button>
+            </form>
+            <?php if ($hasPhoto): ?>
+                <form class="remove-athlete-photo" method="post" action="?action=users&amp;id=<?= $editing ?>#user-photo">
+                    <input type="hidden" name="csrf" value="<?= $csrf ?>">
+                    <button class="secondary danger" name="operation" value="remove-photo">Remover fotografia</button>
+                </form>
+            <?php endif; ?>
+        </section>
+    <?php endif; ?>
     <?php endif; ?>
 </main>
 <footer class="app-version">Versão <?= APP_VERSION ?></footer>
