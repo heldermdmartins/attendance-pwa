@@ -35,6 +35,7 @@ $lisbon = new DateTimeZone('Europe/Lisbon');
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Registo de atividade</title>
+    <link rel="icon" type="image/png" sizes="192x192" href="assets/sporting-icon-192.png">
     <link rel="stylesheet" href="assets/styles.css?v=20">
     <script src="assets/app.js?v=3" defer></script>
 </head>

@@ -186,6 +186,7 @@ $accounts = $pdo->query('SELECT id, username, name, email, phone, role, club_pos
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Gestão de utilizadores</title>
+    <link rel="icon" type="image/png" sizes="192x192" href="assets/sporting-icon-192.png">
     <link rel="stylesheet" href="assets/styles.css?v=23">
     <script src="assets/app.js?v=2" defer></script>
 </head>

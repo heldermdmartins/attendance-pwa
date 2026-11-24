@@ -128,6 +128,7 @@ $pageTitle = $isAdmin ? 'Gestão de atletas' : 'Atletas';
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title><?= $pageTitle ?></title>
+    <link rel="icon" type="image/png" sizes="192x192" href="assets/sporting-icon-192.png">
     <link rel="stylesheet" href="assets/styles.css?v=19">
     <script src="assets/app.js?v=2" defer></script>
 </head>
