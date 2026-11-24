@@ -432,7 +432,7 @@ try {
         <?php elseif (!$cancelled): ?>
             <p>As marcações abrem no dia do treino.</p>
         <?php endif; ?>
-        <?php foreach (['athlete' => ['Atletas', $athletes], 'trainer' => ['Treinadores', $trainers]] as $kind => [$label, $participants]): ?>
+        <?php foreach (['trainer' => ['Treinadores', $trainers], 'athlete' => ['Atletas', $athletes]] as $kind => [$label, $participants]): ?>
             <?php if (!$canMark && !$participants) continue; ?>
             <section class="attendance-group" aria-labelledby="attendance-<?= $kind ?>">
                 <header>
