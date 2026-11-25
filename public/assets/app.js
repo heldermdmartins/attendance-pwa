@@ -54,7 +54,7 @@ for (const roster of document.querySelectorAll('[data-roster]')) {
             card.setAttribute('aria-pressed', String(result.present));
             card.querySelector('.state').textContent = result.present ? '✓ Presente' : 'Por marcar';
             const marked = roster.querySelectorAll('[aria-pressed="true"]').length;
-            count.textContent = `${marked} / ${roster.children.length} presentes`;
+            count.textContent = `${marked}/${roster.children.length} presentes`;
             feedback.classList.remove('error');
             feedback.textContent = result.present
                 ? `Presença de ${name} guardada.`

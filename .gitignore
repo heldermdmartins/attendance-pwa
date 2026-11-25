@@ -47,3 +47,4 @@
 !/database/add-activity-athlete-name.sql
 !/database/add-coach-attendance.sql
 !/database/add-remember-login.sql
+!/database/add-training-roster-count.sql

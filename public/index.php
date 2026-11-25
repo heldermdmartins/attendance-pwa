@@ -183,6 +183,13 @@ try {
              ON DUPLICATE KEY UPDATE present = ?, coach_id = ?, updated_at = CURRENT_TIMESTAMP"
         );
         $query->execute([$personId, $today, $present, $coach, $present, $coach]);
+        if (!$isTrainer) {
+            $snapshot = $pdo->prepare(
+                'UPDATE training_status SET athlete_roster_count = (SELECT COUNT(*) FROM athletes WHERE active = 1)
+                 WHERE training_date = ? AND athlete_roster_count IS NULL'
+            );
+            $snapshot->execute([$today]);
+        }
         recordActivity($pdo, $currentAccount['name'] ?: $currentAccount['username'],
             $present ? 'attendance_marked' : 'attendance_unmarked',
             $isTrainer ? null : $personName, $isTrainer ? $personName : null);
@@ -319,10 +326,12 @@ try {
         );
         $query->execute([$firstDay, $end, $firstDay, $end]);
         $markedDates = array_fill_keys($query->fetchAll(PDO::FETCH_COLUMN), true);
-        $status = db()->prepare('SELECT cancellation_reason FROM training_status WHERE training_date = ?');
+        $status = db()->prepare('SELECT cancellation_reason, athlete_roster_count FROM training_status WHERE training_date = ?');
         $status->execute([$selected]);
-        $cancellationReason = $status->fetchColumn();
-        $cancelled = is_string($cancellationReason);
+        $trainingStatus = $status->fetch(PDO::FETCH_ASSOC);
+        $cancellationReason = $trainingStatus['cancellation_reason'] ?? null;
+        $athleteRosterCount = $trainingStatus['athlete_roster_count'] ?? null;
+        $cancelled = $cancellationReason !== null;
         $canMark = !$cancelled && $selected === $today && $training !== null;
         $readOnlyRecords = $history || $cancelled;
         $trainingError = $_SESSION['training_error'] ?? '';
@@ -377,7 +386,7 @@ try {
     <link rel="apple-touch-icon" sizes="180x180" href="assets/sporting-icon-180.png">
     <link rel="icon" type="image/png" sizes="192x192" href="assets/sporting-icon-192.png">
     <link rel="stylesheet" href="assets/styles.css?v=28">
-    <script src="assets/app.js?v=4" defer></script>
+    <script src="assets/app.js?v=5" defer></script>
 </head>
 <body<?= $coach === null ? ' class="login-page"' : '' ?>>
 <?php if ($coach !== null) require __DIR__ . '/../app/navigation.php'; ?>
@@ -462,7 +471,9 @@ try {
                 <header>
                     <h2 id="attendance-<?= $kind ?>"><?= $label ?></h2>
                     <?php if ($participants): ?>
-                        <strong data-attendance-count><?= array_sum(array_column($participants, 'present')) ?> / <?= count($participants) ?> presentes</strong>
+                        <?php $total = !$canMark && $kind === 'athlete' && $athleteRosterCount !== null
+                            ? max((int) $athleteRosterCount, count($participants)) : count($participants); ?>
+                        <strong data-attendance-count><?= array_sum(array_column($participants, 'present')) ?>/<?= $total ?> presentes</strong>
                     <?php endif; ?>
                 </header>
                 <?php if (!$participants): ?>
