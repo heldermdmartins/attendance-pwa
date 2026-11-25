@@ -347,7 +347,7 @@ try {
             $query = db()->prepare($readOnlyRecords
                 ? 'SELECT a.id, a.name, a.details, r.present FROM attendance r
                    INNER JOIN athletes a ON a.id = r.athlete_id
-                   WHERE r.training_date = ? ORDER BY a.name, a.id'
+                   WHERE r.training_date = ? AND r.present = 1 ORDER BY a.name, a.id'
                 : 'SELECT a.id, a.name, a.details, COALESCE(r.present, 0) AS present FROM athletes a
                    LEFT JOIN attendance r ON r.athlete_id = a.id AND r.training_date = ?
                    WHERE a.active = 1 ORDER BY a.name, a.id');
@@ -468,7 +468,7 @@ try {
             <p class="feedback" id="feedback" role="status" aria-atomic="true"></p>
             <noscript><p>Ative o JavaScript para registar presenças.</p></noscript>
         <?php elseif ($history): ?>
-            <p><?= $athletes || $trainers ? 'Histórico de marcações' : 'Sem marcações nesta data.' ?></p>
+            <p><?= $athletes || $trainers ? 'Histórico de presenças' : 'Sem presenças visíveis nesta data.' ?></p>
         <?php elseif (!$cancelled): ?>
             <p>As marcações abrem no dia do treino.</p>
         <?php endif; ?>
@@ -480,7 +480,12 @@ try {
                     <?php if ($participants): ?>
                         <?php $total = !$canMark && $kind === 'athlete' && $athleteRosterCount !== null
                             ? max((int) $athleteRosterCount, count($participants)) : count($participants); ?>
-                        <strong data-attendance-count><?= array_sum(array_column($participants, 'present')) ?>/<?= $total ?> presentes</strong>
+                        <?php $presentCount = array_sum(array_column($participants, 'present')); ?>
+                        <strong data-attendance-count><?php if (!$canMark && $kind === 'athlete' && $athleteRosterCount === null): ?>
+                            <?= $presentCount ?> <?= $presentCount === 1 ? 'presente' : 'presentes' ?>
+                        <?php else: ?>
+                            <?= $presentCount ?>/<?= $total ?> presentes
+                        <?php endif; ?></strong>
                     <?php endif; ?>
                 </header>
                 <?php if (!$participants): ?>
