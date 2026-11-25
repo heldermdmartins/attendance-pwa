@@ -304,6 +304,21 @@ try {
         $selectedDate = new DateTimeImmutable($selected);
         $training = trainingSchedule($selectedDate);
         $history = $selected < $today;
+        $calendarMonth = ($history ? $selectedDate : $todayDate)->modify('first day of this month');
+        $month = $_GET['month'] ?? null;
+        if (is_string($month) && preg_match('/^[0-9]{4}-(0[1-9]|1[0-2])$/D', $month)
+            && $month >= '1000-01' && $month <= $todayDate->format('Y-m')) {
+            $calendarMonth = new DateTimeImmutable($month . '-01');
+        }
+        $firstDay = $calendarMonth->format('Y-m-d');
+        $end = min($today, $calendarMonth->modify('+1 month')->format('Y-m-d'));
+        $query = db()->prepare(
+            'SELECT training_date FROM attendance WHERE training_date >= ? AND training_date < ?
+             UNION
+             SELECT training_date FROM coach_attendance WHERE training_date >= ? AND training_date < ?'
+        );
+        $query->execute([$firstDay, $end, $firstDay, $end]);
+        $markedDates = array_fill_keys($query->fetchAll(PDO::FETCH_COLUMN), true);
         $status = db()->prepare('SELECT cancellation_reason FROM training_status WHERE training_date = ?');
         $status->execute([$selected]);
         $cancellationReason = $status->fetchColumn();
@@ -361,7 +376,7 @@ try {
     <link rel="manifest" href="manifest.webmanifest?v=2">
     <link rel="apple-touch-icon" sizes="180x180" href="assets/sporting-icon-180.png">
     <link rel="icon" type="image/png" sizes="192x192" href="assets/sporting-icon-192.png">
-    <link rel="stylesheet" href="assets/styles.css?v=25">
+    <link rel="stylesheet" href="assets/styles.css?v=27">
     <script src="assets/app.js?v=4" defer></script>
 </head>
 <body<?= $coach === null ? ' class="login-page"' : '' ?>>
@@ -402,13 +417,7 @@ try {
                 </label>
                 <button class="secondary">Ver treino</button>
             </form>
-            <form method="get">
-                <label>Consultar marcações anteriores
-                    <input type="date" name="date" value="<?= $history ? $selected : '' ?>"
-                           max="<?= $todayDate->modify('-1 day')->format('Y-m-d') ?>" required>
-                </label>
-                <button class="secondary">Consultar</button>
-            </form>
+            <?php require __DIR__ . '/../app/attendance-calendar.php'; ?>
         </section>
         <?php if ($error !== ''): ?><p class="error" role="alert"><?= escape($error) ?></p><?php endif; ?>
         <div class="summary attendance-summary">

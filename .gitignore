@@ -16,6 +16,7 @@
 !/app/remember-login.php
 !/app/athletes.php
 !/app/training-schedule.php
+!/app/attendance-calendar.php
 !/bin/
 /bin/*
 !/bin/manage.php
