@@ -9,6 +9,7 @@
         <div class="app-menu-panel" id="app-menu-panel">
             <ul class="app-menu-links">
                 <li><a href="./"<?= $route === '' ? ' aria-current="page"' : '' ?>>Presenças</a></li>
+                <li><a href="?action=reports"<?= $route === 'reports' ? ' aria-current="page"' : '' ?>>Relatórios</a></li>
                 <?php if ($canViewAthletes): ?>
                     <li><a href="?action=athletes"<?= $route === 'athletes' ? ' aria-current="page"' : '' ?>><?= $isAdmin ? 'Gestão de atletas' : 'Atletas' ?></a></li>
                 <?php endif; ?>

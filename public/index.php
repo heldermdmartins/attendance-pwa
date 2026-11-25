@@ -78,11 +78,11 @@ try {
     $todayDate = new DateTimeImmutable('today');
     $today = $todayDate->format('Y-m-d');
     $error = '';
-    if (in_array($route, ['users', 'athletes', 'activity', 'profile'], true)) {
+    if (in_array($route, ['users', 'athletes', 'activity', 'profile', 'reports'], true)) {
         if ($coach === null) {
             redirectHome();
         }
-        if ($route !== 'profile' && !$isAdmin && ($route !== 'athletes' || !$canViewAthletes || $method !== 'GET' || isset($_GET['view']))) {
+        if (!in_array($route, ['profile', 'reports'], true) && !$isAdmin && ($route !== 'athletes' || !$canViewAthletes || $method !== 'GET' || isset($_GET['view']))) {
             http_response_code(403);
             exit('Não tens permissão para esta ação.');
         }

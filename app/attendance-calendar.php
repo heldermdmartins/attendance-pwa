@@ -1,8 +1,7 @@
 <?php
 declare(strict_types=1);
 
-$months = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-$monthLabel = $months[(int) $calendarMonth->format('n') - 1] . ' de ' . $calendarMonth->format('Y');
+$monthLabel = trainingMonthLabel($calendarMonth->format('Y-m'));
 $firstWeekday = (int) $calendarMonth->format('N');
 $dayCount = (int) $calendarMonth->format('t');
 ?>

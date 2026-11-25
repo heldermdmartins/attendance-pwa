@@ -25,3 +25,9 @@ function upcomingTrainings(DateTimeImmutable $today): array
     }
     return $trainings;
 }
+
+function trainingMonthLabel(string $month): string
+{
+    $names = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+    return $names[(int) substr($month, 5, 2) - 1] . ' de ' . substr($month, 0, 4);
+}
