@@ -376,7 +376,7 @@ try {
     <link rel="manifest" href="manifest.webmanifest?v=2">
     <link rel="apple-touch-icon" sizes="180x180" href="assets/sporting-icon-180.png">
     <link rel="icon" type="image/png" sizes="192x192" href="assets/sporting-icon-192.png">
-    <link rel="stylesheet" href="assets/styles.css?v=27">
+    <link rel="stylesheet" href="assets/styles.css?v=28">
     <script src="assets/app.js?v=4" defer></script>
 </head>
 <body<?= $coach === null ? ' class="login-page"' : '' ?>>
