@@ -56,9 +56,18 @@ for (const roster of document.querySelectorAll('[data-roster]')) {
             const marked = roster.querySelectorAll('[aria-pressed="true"]').length;
             count.textContent = `${marked}/${roster.children.length} presentes`;
             feedback.classList.remove('error');
+            const usage = card.querySelector('[data-monthly-usage]');
+            const overLimit = result.limit != null && result.monthly > result.limit;
+            if (usage) {
+                usage.hidden = result.limit == null;
+                usage.classList.toggle('is-over-limit', overLimit);
+                usage.textContent = result.limit == null ? '' : `${result.monthly}/${result.limit} no mês`;
+                if (overLimit) usage.textContent += ' · Limite ultrapassado';
+            }
             feedback.textContent = result.present
                 ? `Presença de ${name} guardada.`
                 : `Presença de ${name} desmarcada.`;
+            if (overLimit) feedback.textContent += ` Limite mensal ultrapassado (${result.monthly}/${result.limit}).`;
         } catch {
             feedback.classList.add('error');
             feedback.textContent = `Não foi possível confirmar a presença de ${name}. Atualize a página ou tente novamente.`;

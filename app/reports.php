@@ -24,6 +24,17 @@ $months = [];
 while ($day = $query->fetch(PDO::FETCH_ASSOC)) {
     $months[substr($day['training_date'], 0, 7)][] = $day;
 }
+$athleteQuery = db()->prepare(
+    'SELECT totals.month, a.name, a.details, totals.total FROM (
+        SELECT LEFT(training_date, 7) AS month, athlete_id, SUM(present = 1) AS total
+        FROM attendance WHERE training_date <= ? GROUP BY LEFT(training_date, 7), athlete_id
+     ) AS totals INNER JOIN athletes a ON a.id = totals.athlete_id ORDER BY a.name, a.id'
+);
+$athleteQuery->execute([$today]);
+$athletesByMonth = [];
+while ($athlete = $athleteQuery->fetch(PDO::FETCH_ASSOC)) {
+    $athletesByMonth[$athlete['month']][] = $athlete;
+}
 ?>
 <!doctype html>
 <html lang="pt-PT">
@@ -32,7 +43,7 @@ while ($day = $query->fetch(PDO::FETCH_ASSOC)) {
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Relatórios de presenças</title>
     <link rel="icon" type="image/png" sizes="192x192" href="assets/sporting-icon-192.png">
-    <link rel="stylesheet" href="assets/styles.css?v=29">
+    <link rel="stylesheet" href="assets/styles.css?v=30">
     <script src="assets/app.js?v=4" defer></script>
 </head>
 <body>
@@ -74,6 +85,44 @@ while ($day = $query->fetch(PDO::FETCH_ASSOC)) {
                         </tbody>
                     </table>
                 </div>
+                <?php if (!empty($athletesByMonth[$month])): ?>
+                    <?php $trainingWeeks = trainingWeeksInMonth(new DateTimeImmutable($month . '-01')); ?>
+                    <h2>Limites mensais por atleta</h2>
+                    <p><?= $trainingWeeks ?> semanas com treino previsto. Limites calculados pela frequência da turma na ficha do atleta.</p>
+                    <div class="users-table-scroll" role="region" aria-label="Limites mensais por atleta" tabindex="0">
+                        <table class="users-table" role="table" aria-label="Limites mensais">
+                            <thead role="rowgroup">
+                                <tr role="row">
+                                    <th scope="col" role="columnheader">Atleta</th>
+                                    <th scope="col" role="columnheader">Presenças</th>
+                                    <th scope="col" role="columnheader">Limite</th>
+                                    <th scope="col" role="columnheader">Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody role="rowgroup">
+                                <?php foreach ($athletesByMonth[$month] as $athlete): ?>
+                                    <?php
+                                    $frequency = weeklyTrainingFrequency($athlete['details']);
+                                    $limit = $frequency === null ? null : $frequency * $trainingWeeks;
+                                    $excess = $limit === null ? 0 : max(0, (int) $athlete['total'] - $limit);
+                                    ?>
+                                    <tr role="row">
+                                        <th scope="row" role="rowheader"><?= escape($athlete['name']) ?></th>
+                                        <td role="cell"><span class="users-mobile-label" aria-hidden="true">Presenças</span><?= (int) $athlete['total'] ?></td>
+                                        <td role="cell"><span class="users-mobile-label" aria-hidden="true">Limite</span><?= $limit ?? '—' ?></td>
+                                        <td role="cell">
+                                            <?php if ($excess): ?>
+                                                <span class="monthly-usage is-over-limit">Limite ultrapassado (+<?= $excess ?>)</span>
+                                            <?php else: ?>
+                                                <?= $limit === null ? 'Frequência por definir' : 'Dentro do limite' ?>
+                                            <?php endif; ?>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                <?php endif; ?>
             </div>
         </details>
     <?php endforeach; ?>

@@ -6,6 +6,7 @@ require __DIR__ . '/../app/athlete-profile.php';
 require __DIR__ . '/../app/profile-photo.php';
 require __DIR__ . '/../app/remember-login.php';
 require __DIR__ . '/../app/training-schedule.php';
+require __DIR__ . '/../app/attendance-limit.php';
 require __DIR__ . '/../app/activity-log.php';
 
 function escape(string $value): string
@@ -160,12 +161,12 @@ try {
             respond(409, ['error' => 'O treino foi cancelado. Atualiza a página para veres o motivo.']);
         }
         $query = $pdo->prepare($isTrainer
-            ? "SELECT COALESCE(NULLIF(name, ''), CONCAT('Treinador #', id)) FROM coaches
+            ? "SELECT COALESCE(NULLIF(name, ''), CONCAT('Treinador #', id)) AS name FROM coaches
                WHERE id = ? AND active = 1 AND club_position = 'coach' FOR UPDATE"
-            : 'SELECT name FROM athletes WHERE id = ? AND active = 1 FOR UPDATE');
+            : 'SELECT name, details FROM athletes WHERE id = ? AND active = 1 FOR UPDATE');
         $query->execute([$personId]);
-        $personName = $query->fetchColumn();
-        if ($personName === false) {
+        $participant = $query->fetch(PDO::FETCH_ASSOC);
+        if (!$participant) {
             $pdo->rollBack();
             respond(404, ['error' => $isTrainer ? 'Treinador indisponível.' : 'Atleta indisponível.']);
         }
@@ -174,27 +175,31 @@ try {
         $previous = $pdo->prepare("SELECT present FROM $table WHERE $personColumn = ? AND training_date = ?");
         $previous->execute([$personId, $today]);
         $previousPresent = $previous->fetchColumn();
-        if ($previousPresent !== false && (int) $previousPresent === $present) {
-            $pdo->commit();
-            respond(200, ['present' => $data['present']]);
-        }
-        $query = $pdo->prepare(
-            "INSERT INTO $table ($personColumn, training_date, present, coach_id) VALUES (?, ?, ?, ?)
-             ON DUPLICATE KEY UPDATE present = ?, coach_id = ?, updated_at = CURRENT_TIMESTAMP"
-        );
-        $query->execute([$personId, $today, $present, $coach, $present, $coach]);
-        if (!$isTrainer) {
-            $snapshot = $pdo->prepare(
-                'UPDATE training_status SET athlete_roster_count = (SELECT COUNT(*) FROM athletes WHERE active = 1)
-                 WHERE training_date = ? AND athlete_roster_count IS NULL'
+        if ($previousPresent === false || (int) $previousPresent !== $present) {
+            $query = $pdo->prepare(
+                "INSERT INTO $table ($personColumn, training_date, present, coach_id) VALUES (?, ?, ?, ?)
+                 ON DUPLICATE KEY UPDATE present = ?, coach_id = ?, updated_at = CURRENT_TIMESTAMP"
             );
-            $snapshot->execute([$today]);
+            $query->execute([$personId, $today, $present, $coach, $present, $coach]);
+            if (!$isTrainer) {
+                $snapshot = $pdo->prepare(
+                    'UPDATE training_status SET athlete_roster_count = (SELECT COUNT(*) FROM athletes WHERE active = 1)
+                     WHERE training_date = ? AND athlete_roster_count IS NULL'
+                );
+                $snapshot->execute([$today]);
+            }
+            recordActivity($pdo, $currentAccount['name'] ?: $currentAccount['username'],
+                $present ? 'attendance_marked' : 'attendance_unmarked',
+                $isTrainer ? null : $participant['name'], $isTrainer ? $participant['name'] : null);
         }
-        recordActivity($pdo, $currentAccount['name'] ?: $currentAccount['username'],
-            $present ? 'attendance_marked' : 'attendance_unmarked',
-            $isTrainer ? null : $personName, $isTrainer ? $personName : null);
+        $result = ['present' => $data['present']];
+        if (!$isTrainer) {
+            $frequency = weeklyTrainingFrequency($participant['details']);
+            $result['monthly'] = (int) (monthlyAthletePresences($pdo, $todayDate, $personId)[$personId] ?? 0);
+            $result['limit'] = $frequency === null ? null : $frequency * trainingWeeksInMonth($todayDate);
+        }
         $pdo->commit();
-        respond(200, ['present' => $data['present']]);
+        respond(200, $result);
     }
 
     if (in_array($route, ['user-photo', 'trainer-photo'], true) && $method === 'GET') {
@@ -340,14 +345,16 @@ try {
         unset($_SESSION['training_error'], $_SESSION['training_message'], $_SESSION['training_cancel_draft']);
         if ($readOnlyRecords || $canMark) {
             $query = db()->prepare($readOnlyRecords
-                ? 'SELECT a.id, a.name, r.present FROM attendance r
+                ? 'SELECT a.id, a.name, a.details, r.present FROM attendance r
                    INNER JOIN athletes a ON a.id = r.athlete_id
                    WHERE r.training_date = ? ORDER BY a.name, a.id'
-                : 'SELECT a.id, a.name, COALESCE(r.present, 0) AS present FROM athletes a
+                : 'SELECT a.id, a.name, a.details, COALESCE(r.present, 0) AS present FROM athletes a
                    LEFT JOIN attendance r ON r.athlete_id = a.id AND r.training_date = ?
                    WHERE a.active = 1 ORDER BY a.name, a.id');
             $query->execute([$selected]);
             $athletes = $query->fetchAll(PDO::FETCH_ASSOC);
+            $monthlyPresences = monthlyAthletePresences(db(), $selectedDate);
+            $trainingWeeks = trainingWeeksInMonth($selectedDate);
 
             $query = db()->prepare($readOnlyRecords
                 ? "SELECT c.id, COALESCE(NULLIF(c.name, ''), CONCAT('Treinador #', c.id)) AS name, r.present,
@@ -385,8 +392,8 @@ try {
     <link rel="manifest" href="manifest.webmanifest?v=2">
     <link rel="apple-touch-icon" sizes="180x180" href="assets/sporting-icon-180.png">
     <link rel="icon" type="image/png" sizes="192x192" href="assets/sporting-icon-192.png">
-    <link rel="stylesheet" href="assets/styles.css?v=28">
-    <script src="assets/app.js?v=5" defer></script>
+    <link rel="stylesheet" href="assets/styles.css?v=30">
+    <script src="assets/app.js?v=6" defer></script>
 </head>
 <body<?= $coach === null ? ' class="login-page"' : '' ?>>
 <?php if ($coach !== null) require __DIR__ . '/../app/navigation.php'; ?>
@@ -486,6 +493,10 @@ try {
                         $present = (bool) $person['present'];
                         $photo = $kind === 'trainer' ? userPhotoPath($id) : athletePhotoPath($id);
                         $photoAction = $kind === 'trainer' ? 'trainer-photo' : 'photo';
+                        $frequency = $kind === 'athlete' ? weeklyTrainingFrequency($person['details']) : null;
+                        $limit = $frequency === null ? null : $frequency * $trainingWeeks;
+                        $monthly = $kind === 'athlete' ? (int) ($monthlyPresences[$id] ?? 0) : 0;
+                        $overLimit = $limit !== null && $monthly > $limit;
                         ?>
                         <li>
                             <?php if ($canMark): ?>
@@ -503,6 +514,11 @@ try {
                                 <span class="state"<?= $canMark ? ' aria-hidden="true"' : '' ?>>
                                     <?= $present ? '✓ Presente' : ($readOnlyRecords ? 'Desmarcada' : 'Por marcar') ?>
                                 </span>
+                                <?php if ($kind === 'athlete'): ?>
+                                    <span class="monthly-usage<?= $overLimit ? ' is-over-limit' : '' ?>" data-monthly-usage<?= $limit === null ? ' hidden' : '' ?>>
+                                        <?= $limit === null ? '' : "$monthly/$limit no mês" ?><?= $overLimit ? ' · Limite ultrapassado' : '' ?>
+                                    </span>
+                                <?php endif; ?>
                             <?= $canMark ? '</button>' : '</div>' ?>
                         </li>
                     <?php endforeach; ?>

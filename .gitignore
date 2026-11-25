@@ -18,6 +18,7 @@
 !/app/athletes.php
 !/app/training-schedule.php
 !/app/attendance-calendar.php
+!/app/attendance-limit.php
 !/bin/
 /bin/*
 !/bin/manage.php
